@@ -1,0 +1,293 @@
+'use server';
+
+import { createClient } from '@/lib/supabase/server';
+import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { nanoid } from 'nanoid';
+
+/**
+ * Publish a course (make it available for students)
+ */
+export async function publishCourse(courseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const { error } = await supabase
+    .from('courses')
+    .update({
+      is_hosted: true,
+      status: 'published',
+      published_at: new Date().toISOString(),
+    })
+    .eq('id', courseId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/**
+ * Unpublish a course
+ */
+export async function unpublishCourse(courseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const { error } = await supabase
+    .from('courses')
+    .update({
+      is_hosted: false,
+      status: 'draft',
+    })
+    .eq('id', courseId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/**
+ * Generate an invite code for a course
+ */
+export async function generateInviteCode(
+  courseId: string,
+  options?: { maxUses?: number; expiresInDays?: number }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const admin = getSupabaseAdmin();
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  const code = nanoid(8).toUpperCase();
+  const expiresAt = options?.expiresInDays
+    ? new Date(Date.now() + options.expiresInDays * 24 * 60 * 60 * 1000).toISOString()
+    : null;
+
+  const { data: invite, error } = await supabase
+    .from('course_invites')
+    .insert({
+      course_id: courseId,
+      code,
+      created_by: profile.id,
+      max_uses: options?.maxUses || null,
+      expires_at: expiresAt,
+    })
+    .select()
+    .single();
+
+  if (error) return { error: error.message };
+  return { success: true, invite };
+}
+
+/**
+ * Get all invite codes for a course
+ */
+export async function getInviteCodes(courseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated', invites: [] };
+
+  const { data: invites, error } = await supabase
+    .from('course_invites')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('created_at', { ascending: false });
+
+  if (error) return { error: error.message, invites: [] };
+  return { invites: invites || [] };
+}
+
+/**
+ * Delete an invite code
+ */
+export async function deleteInviteCode(inviteId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const { error } = await supabase
+    .from('course_invites')
+    .delete()
+    .eq('id', inviteId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/**
+ * Get students enrolled in a course (with full analytics data)
+ */
+export async function getCourseStudents(courseId: string) {
+  const admin = getSupabaseAdmin();
+
+  const { data: enrollments, error } = await (admin
+    .from('course_enrollments') as any)
+    .select(`
+      id,
+      status,
+      progress,
+      responses,
+      final_score,
+      total_time_spent,
+      time_to_complete,
+      revisits,
+      last_device,
+      joined_at,
+      last_accessed_at,
+      completed_at,
+      student_id
+    `)
+    .eq('course_id', courseId)
+    .order('joined_at', { ascending: false }) as { data: any; error: any };
+
+  if (error) return { error: error.message, students: [] };
+
+  // Get student profiles
+  const studentIds = (enrollments || []).map((e: any) => e.student_id);
+  if (studentIds.length === 0) return { students: [] };
+
+  const { data: profiles } = await (admin
+    .from('users') as any)
+    .select('id, display_name, email, avatar_url')
+    .in('id', studentIds) as { data: any };
+
+  const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+  const students = (enrollments || []).map((enrollment: any) => ({
+    ...enrollment,
+    student: profileMap.get(enrollment.student_id) || null,
+  }));
+
+  return { students };
+}
+
+/**
+ * Get aggregate stats across all teacher's courses
+ */
+export async function getTeacherStats() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const admin = getSupabaseAdmin();
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Get all courses by this teacher
+  const { data: courses } = await supabase
+    .from('courses')
+    .select('id, title, is_hosted, status, created_at')
+    .eq('created_by', profile.id)
+    .order('created_at', { ascending: false });
+
+  if (!courses || courses.length === 0) {
+    return { courses: [], totalStudents: 0, totalCompleted: 0, avgScore: 0 };
+  }
+
+  const courseIds = courses.map(c => c.id);
+
+  // Get all enrollments across teacher's courses
+  const { data: enrollments } = await (admin
+    .from('course_enrollments') as any)
+    .select('id, course_id, status, final_score, total_time_spent')
+    .in('course_id', courseIds) as { data: any };
+
+  const allEnrollments = enrollments || [];
+  const totalStudents = allEnrollments.length;
+  const completedStudents = allEnrollments.filter((e: any) =>
+    e.status === 'completed' || e.status === 'passed'
+  ).length;
+  const scoredStudents = allEnrollments.filter((e: any) => e.final_score !== null);
+  const avgScore = scoredStudents.length > 0
+    ? Math.round(scoredStudents.reduce((sum: number, e: any) => sum + e.final_score, 0) / scoredStudents.length)
+    : 0;
+  const avgTimeSpent = allEnrollments.length > 0
+    ? Math.round(allEnrollments.reduce((sum: number, e: any) => sum + (e.total_time_spent || 0), 0) / allEnrollments.length)
+    : 0;
+
+  // Per-course stats
+  const courseStats = courses.map(course => {
+    const courseEnrollments = allEnrollments.filter((e: any) => e.course_id === course.id);
+    const courseCompleted = courseEnrollments.filter((e: any) =>
+      e.status === 'completed' || e.status === 'passed'
+    ).length;
+    const courseScored = courseEnrollments.filter((e: any) => e.final_score !== null);
+    const courseAvgScore = courseScored.length > 0
+      ? Math.round(courseScored.reduce((s: number, e: any) => s + e.final_score, 0) / courseScored.length)
+      : null;
+
+    return {
+      ...course,
+      enrolled: courseEnrollments.length,
+      completed: courseCompleted,
+      completionRate: courseEnrollments.length > 0
+        ? Math.round((courseCompleted / courseEnrollments.length) * 100)
+        : 0,
+      avgScore: courseAvgScore,
+    };
+  });
+
+  return {
+    courses: courseStats,
+    totalStudents,
+    totalCompleted: completedStudents,
+    completionRate: totalStudents > 0 ? Math.round((completedStudents / totalStudents) * 100) : 0,
+    avgScore,
+    avgTimeSpent,
+  };
+}
+
+/**
+ * Update course deadline settings
+ */
+export async function updateCourseDeadlines(
+  courseId: string,
+  settings: {
+    has_deadline: boolean;
+    course_deadline?: string | null;
+    submission_deadline?: string | null;
+  }
+) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
+  const { error } = await supabase
+    .from('courses')
+    .update({
+      has_deadline: settings.has_deadline,
+      course_deadline: settings.course_deadline || null,
+      submission_deadline: settings.submission_deadline || null,
+    })
+    .eq('id', courseId);
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
+/**
+ * Remove a student from a course
+ */
+export async function removeStudent(enrollmentId: string) {
+  const admin = getSupabaseAdmin();
+
+  const { error } = await (admin
+    .from('course_enrollments') as any)
+    .delete()
+    .eq('id', enrollmentId) as { error: any };
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
