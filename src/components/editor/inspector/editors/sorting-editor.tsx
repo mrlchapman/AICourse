@@ -13,49 +13,49 @@ export function SortingEditor({ activity, onUpdate }: Props) {
   const addCategory = () => {
     onUpdate({
       categories: [
-        ...activity.categories,
+        ...(activity.categories || []),
         { id: `cat-${Date.now()}`, title: '' },
       ],
     });
   };
 
   const updateCategory = (index: number, title: string) => {
-    const categories = activity.categories.map((c, i) =>
+    const categories = (activity.categories || []).map((c, i) =>
       i === index ? { ...c, title } : c
     );
     onUpdate({ categories });
   };
 
   const removeCategory = (index: number) => {
-    const catId = activity.categories[index].id;
+    const catId = (activity.categories || [])[index].id;
     onUpdate({
-      categories: activity.categories.filter((_, i) => i !== index),
-      items: activity.items.filter((item) => item.categoryId !== catId),
+      categories: (activity.categories || []).filter((_, i) => i !== index),
+      items: (activity.items || []).filter((item) => item.categoryId !== catId),
     });
   };
 
   const addItem = () => {
     onUpdate({
       items: [
-        ...activity.items,
+        ...(activity.items || []),
         {
           id: `item-${Date.now()}`,
           text: '',
-          categoryId: activity.categories[0]?.id || '',
+          categoryId: (activity.categories || [])[0]?.id || '',
         },
       ],
     });
   };
 
   const updateItem = (index: number, updates: Record<string, string>) => {
-    const items = activity.items.map((item, i) =>
+    const items = (activity.items || []).map((item, i) =>
       i === index ? { ...item, ...updates } : item
     );
     onUpdate({ items });
   };
 
   const removeItem = (index: number) => {
-    onUpdate({ items: activity.items.filter((_, i) => i !== index) });
+    onUpdate({ items: (activity.items || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -69,9 +69,9 @@ export function SortingEditor({ activity, onUpdate }: Props) {
       {/* Categories */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Categories ({activity.categories.length})
+          Categories ({(activity.categories || []).length})
         </label>
-        {activity.categories.map((cat, i) => (
+        {(activity.categories || []).map((cat, i) => (
           <div key={cat.id} className="flex items-center gap-1">
             <input
               type="text"
@@ -99,9 +99,9 @@ export function SortingEditor({ activity, onUpdate }: Props) {
       {/* Items */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Items ({activity.items.length})
+          Items ({(activity.items || []).length})
         </label>
-        {activity.items.map((item, i) => (
+        {(activity.items || []).map((item, i) => (
           <div key={item.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Item {i + 1}</span>
@@ -125,7 +125,7 @@ export function SortingEditor({ activity, onUpdate }: Props) {
               className="w-full text-xs px-2 py-1 border border-border rounded bg-surface outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="">Select category...</option>
-              {activity.categories.map((cat) => (
+              {(activity.categories || []).map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.title || 'Untitled'}</option>
               ))}
             </select>
@@ -134,7 +134,7 @@ export function SortingEditor({ activity, onUpdate }: Props) {
         <button
           onClick={addItem}
           className="flex items-center gap-1 text-xs text-primary hover:underline"
-          disabled={activity.categories.length === 0}
+          disabled={(activity.categories || []).length === 0}
         >
           <Plus className="h-3 w-3" /> Add item
         </button>

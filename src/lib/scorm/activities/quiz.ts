@@ -1,6 +1,8 @@
 import { QuizActivity } from './types';
 
 export function renderQuiz(activity: QuizActivity): string {
+  // Ensure questions array exists
+  if (!activity.questions) activity.questions = [];
   // We embed the quiz data directly into the client-side script
   // Sanitize JSON to be safe in a script tag
   const quizData = JSON.stringify(activity).replace(/<\/script>/gi, '<\\/script>');
@@ -765,6 +767,7 @@ function describeTime(seconds: number): string {
 }
 
 function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
   return unsafe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

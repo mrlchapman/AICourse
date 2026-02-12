@@ -11,7 +11,7 @@ interface Props {
 
 export function BranchingScenarioEditor({ activity, onUpdate }: Props) {
   const updateNode = (nodeId: string, updates: Record<string, unknown>) => {
-    const nodes = activity.nodes.map((n) =>
+    const nodes = (activity.nodes || []).map((n) =>
       n.id === nodeId ? { ...n, ...updates } : n
     );
     onUpdate({ nodes });
@@ -44,17 +44,17 @@ export function BranchingScenarioEditor({ activity, onUpdate }: Props) {
       newNode.content = '';
     }
 
-    onUpdate({ nodes: [...activity.nodes, newNode] });
+    onUpdate({ nodes: [...(activity.nodes || []), newNode] });
   };
 
   const removeNode = (nodeId: string) => {
     onUpdate({
-      nodes: activity.nodes.filter((n) => n.id !== nodeId),
+      nodes: (activity.nodes || []).filter((n) => n.id !== nodeId),
     });
   };
 
   const updateChoice = (nodeId: string, choiceIndex: number, updates: Record<string, string>) => {
-    const node = activity.nodes.find((n) => n.id === nodeId) as ScenarioDecisionNode | undefined;
+    const node = (activity.nodes || []).find((n) => n.id === nodeId) as ScenarioDecisionNode | undefined;
     if (!node || node.type !== 'decision') return;
     const choices = node.choices.map((c, i) =>
       i === choiceIndex ? { ...c, ...updates } : c
@@ -63,7 +63,7 @@ export function BranchingScenarioEditor({ activity, onUpdate }: Props) {
   };
 
   const addChoice = (nodeId: string) => {
-    const node = activity.nodes.find((n) => n.id === nodeId) as ScenarioDecisionNode | undefined;
+    const node = (activity.nodes || []).find((n) => n.id === nodeId) as ScenarioDecisionNode | undefined;
     if (!node || node.type !== 'decision') return;
     updateNode(nodeId, {
       choices: [
@@ -100,7 +100,7 @@ export function BranchingScenarioEditor({ activity, onUpdate }: Props) {
           className="w-full text-xs px-2 py-1.5 border border-border rounded bg-surface outline-none focus:ring-1 focus:ring-primary"
         >
           <option value="">Select start node...</option>
-          {activity.nodes.map((n) => (
+          {(activity.nodes || []).map((n) => (
             <option key={n.id} value={n.id}>{n.title || n.id} ({n.type})</option>
           ))}
         </select>
@@ -109,10 +109,10 @@ export function BranchingScenarioEditor({ activity, onUpdate }: Props) {
       {/* Nodes */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Nodes ({activity.nodes.length})
+          Nodes ({(activity.nodes || []).length})
         </label>
 
-        {activity.nodes.map((node) => (
+        {(activity.nodes || []).map((node) => (
           <div key={node.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-primary capitalize">{node.type}</span>
@@ -166,7 +166,7 @@ export function BranchingScenarioEditor({ activity, onUpdate }: Props) {
                         className="w-full text-[10px] px-2 py-0.5 border border-border rounded bg-surface outline-none focus:ring-1 focus:ring-primary"
                       >
                         <option value="">Target node...</option>
-                        {activity.nodes.filter((n) => n.id !== node.id).map((n) => (
+                        {(activity.nodes || []).filter((n) => n.id !== node.id).map((n) => (
                           <option key={n.id} value={n.id}>{n.title || n.id}</option>
                         ))}
                       </select>

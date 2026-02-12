@@ -11,7 +11,7 @@ interface Props {
 
 export function TimelineEditor({ activity, onUpdate }: Props) {
   const updateEvent = (index: number, updates: Record<string, string>) => {
-    const events = activity.events.map((e, i) =>
+    const events = (activity.events || []).map((e, i) =>
       i === index ? { ...e, ...updates } : e
     );
     onUpdate({ events });
@@ -20,14 +20,14 @@ export function TimelineEditor({ activity, onUpdate }: Props) {
   const addEvent = () => {
     onUpdate({
       events: [
-        ...activity.events,
+        ...(activity.events || []),
         { id: `evt-${Date.now()}`, title: '', date: '', content: '' },
       ],
     });
   };
 
   const removeEvent = (index: number) => {
-    onUpdate({ events: activity.events.filter((_, i) => i !== index) });
+    onUpdate({ events: (activity.events || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -41,9 +41,9 @@ export function TimelineEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Events ({activity.events.length})
+          Events ({(activity.events || []).length})
         </label>
-        {activity.events.map((event, i) => (
+        {(activity.events || []).map((event, i) => (
           <div key={event.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Event {i + 1}</span>

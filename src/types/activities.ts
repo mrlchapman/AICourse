@@ -35,7 +35,8 @@ export type ActivityType =
   | 'branching_scenario'
   | 'screen_recording'
   | 'fill_in_blank'
-  | 'live';
+  | 'live'
+  | 'discussion';
 
 export interface BaseActivity {
   id: string;
@@ -429,6 +430,23 @@ export interface BranchingScenarioActivity extends BaseActivity {
   required?: boolean;
 }
 
+export interface DiscussionActivity extends BaseActivity {
+  type: 'discussion';
+  title: string;
+  prompt: string;
+  description?: string;
+  guidelines?: string;
+  config?: {
+    allowAnonymous?: boolean;
+    requireResponse?: boolean;
+    minResponseLength?: number;
+    enableUpvoting?: boolean;
+    enableReplies?: boolean;
+    moderationEnabled?: boolean;
+  };
+  required?: boolean;
+}
+
 export interface FillInBlankActivity extends BaseActivity {
   type: 'fill_in_blank';
   text: string;
@@ -479,7 +497,8 @@ export type Activity =
   | BranchingScenarioActivity
   | ScreenRecordingActivity
   | LiveActivity
-  | FillInBlankActivity;
+  | FillInBlankActivity
+  | DiscussionActivity;
 
 // Course structure types
 export interface CourseSection {
@@ -601,6 +620,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, {
   code_snippet: { icon: '💻', label: 'Code', category: 'Advanced', description: 'Display code blocks' },
   button: { icon: '🔘', label: 'Button / CTA', category: 'Advanced', description: 'Call-to-action buttons' },
   branching_scenario: { icon: '🌳', label: 'Branching Scenario', category: 'Advanced', description: 'Choose-your-own-adventure' },
+  discussion: { icon: '💬', label: 'Discussion', category: 'Interactive', description: 'Discussion forum activity' },
 };
 
 export function getActivityDisplayInfo(activity: Activity): { icon: string; label: string } {

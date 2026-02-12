@@ -10,7 +10,7 @@ interface Props {
 
 export function ProcessEditor({ activity, onUpdate }: Props) {
   const updateStep = (index: number, updates: Record<string, string>) => {
-    const steps = activity.steps.map((s, i) =>
+    const steps = (activity.steps || []).map((s, i) =>
       i === index ? { ...s, ...updates } : s
     );
     onUpdate({ steps });
@@ -19,18 +19,18 @@ export function ProcessEditor({ activity, onUpdate }: Props) {
   const addStep = () => {
     onUpdate({
       steps: [
-        ...activity.steps,
+        ...(activity.steps || []),
         { id: `step-${Date.now()}`, title: '', content: '' },
       ],
     });
   };
 
   const removeStep = (index: number) => {
-    onUpdate({ steps: activity.steps.filter((_, i) => i !== index) });
+    onUpdate({ steps: (activity.steps || []).filter((_, i) => i !== index) });
   };
 
   const moveStep = (index: number, direction: 'up' | 'down') => {
-    const steps = [...activity.steps];
+    const steps = [...(activity.steps || [])];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= steps.length) return;
     [steps[index], steps[newIndex]] = [steps[newIndex], steps[index]];
@@ -40,10 +40,10 @@ export function ProcessEditor({ activity, onUpdate }: Props) {
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium text-foreground">
-        Steps ({activity.steps.length})
+        Steps ({(activity.steps || []).length})
       </label>
 
-      {activity.steps.map((step, i) => (
+      {(activity.steps || []).map((step, i) => (
         <div key={step.id} className="p-2 border border-border rounded-md space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-foreground-muted">Step {i + 1}</span>
@@ -57,7 +57,7 @@ export function ProcessEditor({ activity, onUpdate }: Props) {
               </button>
               <button
                 onClick={() => moveStep(i, 'down')}
-                disabled={i === activity.steps.length - 1}
+                disabled={i === (activity.steps || []).length - 1}
                 className="p-0.5 text-foreground-subtle hover:text-foreground disabled:opacity-30"
               >
                 <ArrowDown className="h-2.5 w-2.5" />

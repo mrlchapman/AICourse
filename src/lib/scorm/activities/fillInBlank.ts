@@ -24,7 +24,7 @@ export function renderFillInBlank(activity: FillInBlankActivity): string {
   const blanksData = JSON.stringify(blanks.map((b, i) => ({
     id: b.id,
     index: i,
-    answers: b.answers.map(a => caseSensitive ? a : a.toLowerCase()),
+    answers: (b.answers || []).map(a => caseSensitive ? a : a.toLowerCase()),
     hint: b.hint || '',
     primaryAnswer: b.answers[0] || ''
   })));
@@ -873,6 +873,7 @@ function sanitizeId(id: string): string {
 }
 
 function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
   return unsafe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

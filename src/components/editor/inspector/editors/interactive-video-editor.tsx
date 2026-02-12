@@ -25,14 +25,14 @@ function parseTimestamp(str: string): number {
 
 export function InteractiveVideoEditor({ activity, onUpdate }: Props) {
   const updateCheckpoint = (index: number, updates: Partial<VideoCheckpoint>) => {
-    const checkpoints = activity.checkpoints.map((cp, i) =>
+    const checkpoints = (activity.checkpoints || []).map((cp, i) =>
       i === index ? { ...cp, ...updates } : cp
     );
     onUpdate({ checkpoints });
   };
 
   const updateCheckpointOption = (cpIndex: number, optIndex: number, updates: Record<string, unknown>) => {
-    const cp = activity.checkpoints[cpIndex];
+    const cp = (activity.checkpoints || [])[cpIndex];
     if (!cp.options) return;
     const options = cp.options.map((opt, i) => {
       if (i !== optIndex) {
@@ -61,12 +61,12 @@ export function InteractiveVideoEditor({ activity, onUpdate }: Props) {
           }),
     };
     onUpdate({
-      checkpoints: [...activity.checkpoints, newCp].sort((a, b) => a.timestamp - b.timestamp),
+      checkpoints: [...(activity.checkpoints || []), newCp].sort((a, b) => a.timestamp - b.timestamp),
     });
   };
 
   const removeCheckpoint = (index: number) => {
-    onUpdate({ checkpoints: activity.checkpoints.filter((_, i) => i !== index) });
+    onUpdate({ checkpoints: (activity.checkpoints || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -97,9 +97,9 @@ export function InteractiveVideoEditor({ activity, onUpdate }: Props) {
       {/* Checkpoints */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Checkpoints ({activity.checkpoints.length})
+          Checkpoints ({(activity.checkpoints || []).length})
         </label>
-        {activity.checkpoints.map((cp, i) => (
+        {(activity.checkpoints || []).map((cp, i) => (
           <div key={cp.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-primary">

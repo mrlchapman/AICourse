@@ -35,7 +35,8 @@ export type ActivityType =
   | 'branching_scenario'
   | 'screen_recording'
   | 'fill_in_blank'
-  | 'live';
+  | 'live'
+  | 'discussion';
 
 export interface BaseActivity {
   id: string;
@@ -561,7 +562,25 @@ export type Activity =
   | BranchingScenarioActivity
   | ScreenRecordingActivity
   | LiveActivity
-  | FillInBlankActivity;
+  | FillInBlankActivity
+  | DiscussionActivity;
+
+export interface DiscussionActivity extends BaseActivity {
+  type: 'discussion';
+  title: string;
+  prompt: string;
+  description?: string;
+  guidelines?: string;
+  config?: {
+    allowAnonymous?: boolean;
+    requireResponse?: boolean;
+    minResponseLength?: number;
+    enableUpvoting?: boolean;
+    enableReplies?: boolean;
+    moderationEnabled?: boolean;
+  };
+  required?: boolean;
+}
 
 export interface CourseSection {
   id: string;
@@ -709,6 +728,7 @@ export const ACTIVITY_CONFIG: Record<ActivityType, {
   button: { icon: '🔘', label: 'Button / CTA', category: 'Advanced', description: 'Call-to-action buttons' },
   branching_scenario: { icon: '🌳', label: 'Branching Scenario', category: 'Advanced', description: 'Choose-your-own-adventure' },
   fill_in_blank: { icon: '✏️', label: 'Fill in the Blank', category: 'Interactive', description: 'Complete sentences with missing words' },
+  discussion: { icon: '💬', label: 'Discussion', category: 'Interactive', description: 'Discussion forum activity' },
 };
 
 /**

@@ -11,17 +11,17 @@ interface Props {
 
 export function FillInBlankEditor({ activity, onUpdate }: Props) {
   const updateBlank = (index: number, updates: Record<string, unknown>) => {
-    const blanks = activity.blanks.map((b, i) =>
+    const blanks = (activity.blanks || []).map((b, i) =>
       i === index ? { ...b, ...updates } : b
     );
     onUpdate({ blanks });
   };
 
   const addBlank = () => {
-    const newBlankIndex = activity.blanks.length;
+    const newBlankIndex = (activity.blanks || []).length;
     onUpdate({
       blanks: [
-        ...activity.blanks,
+        ...(activity.blanks || []),
         { id: `blank-${Date.now()}`, answers: [''], hint: '' },
       ],
       text: activity.text + ` {${newBlankIndex}}`,
@@ -30,23 +30,23 @@ export function FillInBlankEditor({ activity, onUpdate }: Props) {
 
   const removeBlank = (index: number) => {
     onUpdate({
-      blanks: activity.blanks.filter((_, i) => i !== index),
+      blanks: (activity.blanks || []).filter((_, i) => i !== index),
     });
   };
 
   const addAnswer = (blankIndex: number) => {
-    const blank = activity.blanks[blankIndex];
+    const blank = (activity.blanks || [])[blankIndex];
     updateBlank(blankIndex, { answers: [...blank.answers, ''] });
   };
 
   const updateAnswer = (blankIndex: number, answerIndex: number, value: string) => {
-    const blank = activity.blanks[blankIndex];
+    const blank = (activity.blanks || [])[blankIndex];
     const answers = blank.answers.map((a, i) => (i === answerIndex ? value : a));
     updateBlank(blankIndex, { answers });
   };
 
   const removeAnswer = (blankIndex: number, answerIndex: number) => {
-    const blank = activity.blanks[blankIndex];
+    const blank = (activity.blanks || [])[blankIndex];
     updateBlank(blankIndex, { answers: blank.answers.filter((_, i) => i !== answerIndex) });
   };
 
@@ -78,9 +78,9 @@ export function FillInBlankEditor({ activity, onUpdate }: Props) {
       {/* Blanks */}
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Blanks ({activity.blanks.length})
+          Blanks ({(activity.blanks || []).length})
         </label>
-        {activity.blanks.map((blank, bi) => (
+        {(activity.blanks || []).map((blank, bi) => (
           <div key={blank.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-primary">{`{${bi}}`}</span>

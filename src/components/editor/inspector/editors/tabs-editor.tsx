@@ -10,7 +10,7 @@ interface Props {
 
 export function TabsEditor({ activity, onUpdate }: Props) {
   const updateTab = (index: number, updates: Record<string, string>) => {
-    const tabs = activity.tabs.map((t, i) =>
+    const tabs = (activity.tabs || []).map((t, i) =>
       i === index ? { ...t, ...updates } : t
     );
     onUpdate({ tabs });
@@ -19,26 +19,26 @@ export function TabsEditor({ activity, onUpdate }: Props) {
   const addTab = () => {
     onUpdate({
       tabs: [
-        ...activity.tabs,
+        ...(activity.tabs || []),
         { id: `tab-${Date.now()}`, title: '', content: '' },
       ],
     });
   };
 
   const removeTab = (index: number) => {
-    onUpdate({ tabs: activity.tabs.filter((_, i) => i !== index) });
+    onUpdate({ tabs: (activity.tabs || []).filter((_, i) => i !== index) });
   };
 
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-foreground">
-        Tabs ({activity.tabs.length})
+        Tabs ({(activity.tabs || []).length})
       </label>
-      {activity.tabs.map((tab, i) => (
+      {(activity.tabs || []).map((tab, i) => (
         <div key={tab.id} className="p-2 border border-border rounded-md space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-foreground-muted">Tab {i + 1}</span>
-            {activity.tabs.length > 1 && (
+            {(activity.tabs || []).length > 1 && (
               <button
                 onClick={() => removeTab(i)}
                 className="p-0.5 text-foreground-subtle hover:text-danger"

@@ -150,6 +150,21 @@ function createDefaultActivity(type: ActivityType): Activity {
       return { ...base, type: 'pdf', pdfUrl: '' };
     case 'embed':
       return { ...base, type: 'embed', url: '' };
+    case 'gamification':
+      return {
+        ...base,
+        type: 'gamification',
+        gameType: 'memory_match',
+        config: { pairs: [] },
+      };
+    case 'discussion':
+      return {
+        ...base,
+        type: 'discussion',
+        title: 'Discussion',
+        prompt: 'Share your thoughts on this topic...',
+        config: { enableReplies: true },
+      };
     default:
       return { ...base } as Activity;
   }

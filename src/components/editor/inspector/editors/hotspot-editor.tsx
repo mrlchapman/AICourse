@@ -11,7 +11,7 @@ interface Props {
 
 export function HotspotEditor({ activity, onUpdate }: Props) {
   const updateHotspot = (index: number, updates: Record<string, unknown>) => {
-    const hotspots = activity.hotspots.map((h, i) =>
+    const hotspots = (activity.hotspots || []).map((h, i) =>
       i === index ? { ...h, ...updates } : h
     );
     onUpdate({ hotspots });
@@ -20,7 +20,7 @@ export function HotspotEditor({ activity, onUpdate }: Props) {
   const addHotspot = () => {
     onUpdate({
       hotspots: [
-        ...activity.hotspots,
+        ...(activity.hotspots || []),
         {
           id: `hs-${Date.now()}`,
           x: 50,
@@ -33,7 +33,7 @@ export function HotspotEditor({ activity, onUpdate }: Props) {
   };
 
   const removeHotspot = (index: number) => {
-    onUpdate({ hotspots: activity.hotspots.filter((_, i) => i !== index) });
+    onUpdate({ hotspots: (activity.hotspots || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -52,7 +52,7 @@ export function HotspotEditor({ activity, onUpdate }: Props) {
             alt="Hotspot base"
             className="w-full h-auto"
           />
-          {activity.hotspots.map((hs, i) => (
+          {(activity.hotspots || []).map((hs, i) => (
             <div
               key={hs.id}
               className="absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 bg-primary text-white rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white shadow"
@@ -66,9 +66,9 @@ export function HotspotEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Hotspots ({activity.hotspots.length})
+          Hotspots ({(activity.hotspots || []).length})
         </label>
-        {activity.hotspots.map((hs, i) => (
+        {(activity.hotspots || []).map((hs, i) => (
           <div key={hs.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-primary">Spot {i + 1}</span>

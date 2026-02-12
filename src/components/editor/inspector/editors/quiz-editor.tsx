@@ -11,14 +11,14 @@ interface Props {
 
 export function QuizEditor({ activity, onUpdate }: Props) {
   const updateQuestion = (qIndex: number, updates: Record<string, unknown>) => {
-    const questions = activity.questions.map((q, i) =>
+    const questions = (activity.questions || []).map((q, i) =>
       i === qIndex ? { ...q, ...updates } : q
     );
     onUpdate({ questions });
   };
 
   const updateOption = (qIndex: number, oIndex: number, updates: Record<string, unknown>) => {
-    const questions = activity.questions.map((q, qi) => {
+    const questions = (activity.questions || []).map((q, qi) => {
       if (qi !== qIndex) return q;
       const options = q.options.map((opt, oi) => {
         if (oi !== oIndex) {
@@ -35,7 +35,7 @@ export function QuizEditor({ activity, onUpdate }: Props) {
   const addQuestion = () => {
     onUpdate({
       questions: [
-        ...activity.questions,
+        ...(activity.questions || []),
         {
           id: `q-${Date.now()}`,
           text: '',
@@ -50,7 +50,7 @@ export function QuizEditor({ activity, onUpdate }: Props) {
   };
 
   const removeQuestion = (index: number) => {
-    onUpdate({ questions: activity.questions.filter((_, i) => i !== index) });
+    onUpdate({ questions: (activity.questions || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -80,9 +80,9 @@ export function QuizEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-3">
         <label className="block text-sm font-medium text-foreground">
-          Questions ({activity.questions.length})
+          Questions ({(activity.questions || []).length})
         </label>
-        {activity.questions.map((q, qi) => (
+        {(activity.questions || []).map((q, qi) => (
           <div key={q.id} className="p-2 border border-border rounded-md space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Q{qi + 1}</span>

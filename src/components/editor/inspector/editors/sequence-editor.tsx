@@ -11,7 +11,7 @@ interface Props {
 
 export function SequenceEditor({ activity, onUpdate }: Props) {
   const updateItem = (index: number, text: string) => {
-    const items = activity.items.map((item, i) =>
+    const items = (activity.items || []).map((item, i) =>
       i === index ? { ...item, text } : item
     );
     onUpdate({ items });
@@ -20,22 +20,22 @@ export function SequenceEditor({ activity, onUpdate }: Props) {
   const addItem = () => {
     onUpdate({
       items: [
-        ...activity.items,
-        { id: `seq-${Date.now()}`, text: '', order: activity.items.length },
+        ...(activity.items || []),
+        { id: `seq-${Date.now()}`, text: '', order: (activity.items || []).length },
       ],
     });
   };
 
   const removeItem = (index: number) => {
     onUpdate({
-      items: activity.items
+      items: (activity.items || [])
         .filter((_, i) => i !== index)
         .map((item, i) => ({ ...item, order: i })),
     });
   };
 
   const moveItem = (index: number, direction: 'up' | 'down') => {
-    const items = [...activity.items];
+    const items = [...(activity.items || [])];
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= items.length) return;
     [items[index], items[newIndex]] = [items[newIndex], items[index]];
@@ -52,12 +52,12 @@ export function SequenceEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Items - Correct Order ({activity.items.length})
+          Items - Correct Order ({(activity.items || []).length})
         </label>
         <p className="text-xs text-foreground-muted">
           Arrange in the correct order. Students will see them shuffled.
         </p>
-        {activity.items.map((item, i) => (
+        {(activity.items || []).map((item, i) => (
           <div key={item.id} className="flex items-center gap-1">
             <span className="text-xs font-medium text-foreground-muted w-5 text-center shrink-0">
               {i + 1}
@@ -79,7 +79,7 @@ export function SequenceEditor({ activity, onUpdate }: Props) {
               </button>
               <button
                 onClick={() => moveItem(i, 'down')}
-                disabled={i === activity.items.length - 1}
+                disabled={i === (activity.items || []).length - 1}
                 className="p-0.5 text-foreground-subtle hover:text-foreground disabled:opacity-30"
               >
                 <ArrowDown className="h-2.5 w-2.5" />

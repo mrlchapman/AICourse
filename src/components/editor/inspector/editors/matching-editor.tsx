@@ -11,7 +11,7 @@ interface Props {
 
 export function MatchingEditor({ activity, onUpdate }: Props) {
   const updatePair = (index: number, updates: Record<string, string>) => {
-    const pairs = activity.pairs.map((p, i) =>
+    const pairs = (activity.pairs || []).map((p, i) =>
       i === index ? { ...p, ...updates } : p
     );
     onUpdate({ pairs });
@@ -20,14 +20,14 @@ export function MatchingEditor({ activity, onUpdate }: Props) {
   const addPair = () => {
     onUpdate({
       pairs: [
-        ...activity.pairs,
+        ...(activity.pairs || []),
         { id: `pair-${Date.now()}`, left: '', right: '' },
       ],
     });
   };
 
   const removePair = (index: number) => {
-    onUpdate({ pairs: activity.pairs.filter((_, i) => i !== index) });
+    onUpdate({ pairs: (activity.pairs || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -40,9 +40,9 @@ export function MatchingEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Pairs ({activity.pairs.length})
+          Pairs ({(activity.pairs || []).length})
         </label>
-        {activity.pairs.map((pair, i) => (
+        {(activity.pairs || []).map((pair, i) => (
           <div key={pair.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Pair {i + 1}</span>

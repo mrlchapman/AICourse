@@ -14,7 +14,7 @@ const ALIGNMENTS = ['left', 'center', 'right'] as const;
 
 export function ButtonEditor({ activity, onUpdate }: Props) {
   const updateButton = (index: number, updates: Record<string, unknown>) => {
-    const buttons = activity.buttons.map((b, i) =>
+    const buttons = (activity.buttons || []).map((b, i) =>
       i === index ? { ...b, ...updates } : b
     );
     onUpdate({ buttons });
@@ -23,7 +23,7 @@ export function ButtonEditor({ activity, onUpdate }: Props) {
   const addButton = () => {
     onUpdate({
       buttons: [
-        ...activity.buttons,
+        ...(activity.buttons || []),
         {
           id: `btn-${Date.now()}`,
           text: 'Click Here',
@@ -37,7 +37,7 @@ export function ButtonEditor({ activity, onUpdate }: Props) {
   };
 
   const removeButton = (index: number) => {
-    onUpdate({ buttons: activity.buttons.filter((_, i) => i !== index) });
+    onUpdate({ buttons: (activity.buttons || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -57,9 +57,9 @@ export function ButtonEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Buttons ({activity.buttons.length})
+          Buttons ({(activity.buttons || []).length})
         </label>
-        {activity.buttons.map((btn, i) => (
+        {(activity.buttons || []).map((btn, i) => (
           <div key={btn.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Button {i + 1}</span>

@@ -136,4 +136,4 @@ document.addEventListener('keydown',function(e){var lb=document.getElementById('
 }
 
 function sanitizeId(id: string): string { return id.replace(/[^a-zA-Z0-9_]/g, '_'); }
-function escapeHtml(s: string): string { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+function escapeHtml(s: string): string { if (!s) return ''; return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }

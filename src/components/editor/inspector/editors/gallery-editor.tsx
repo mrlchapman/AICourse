@@ -11,7 +11,7 @@ interface Props {
 
 export function GalleryEditor({ activity, onUpdate }: Props) {
   const updateImage = (index: number, updates: Record<string, string>) => {
-    const images = activity.images.map((img, i) =>
+    const images = (activity.images || []).map((img, i) =>
       i === index ? { ...img, ...updates } : img
     );
     onUpdate({ images });
@@ -20,14 +20,14 @@ export function GalleryEditor({ activity, onUpdate }: Props) {
   const addImage = () => {
     onUpdate({
       images: [
-        ...activity.images,
+        ...(activity.images || []),
         { id: `img-${Date.now()}`, src: '', alt: '', caption: '' },
       ],
     });
   };
 
   const removeImage = (index: number) => {
-    onUpdate({ images: activity.images.filter((_, i) => i !== index) });
+    onUpdate({ images: (activity.images || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -53,9 +53,9 @@ export function GalleryEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Images ({activity.images.length})
+          Images ({(activity.images || []).length})
         </label>
-        {activity.images.map((img, i) => (
+        {(activity.images || []).map((img, i) => (
           <div key={img.id} className="p-2 border border-border rounded-md space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Image {i + 1}</span>

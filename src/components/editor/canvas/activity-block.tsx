@@ -321,6 +321,38 @@ function ActivityPreview({ activity }: { activity: Activity }) {
         </div>
       );
 
+    case 'gamification':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Gamepad2 className="h-5 w-5 text-purple-500" />
+            <span className="text-sm font-medium text-foreground">
+              {activity.gameType?.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) || 'Game'}
+            </span>
+          </div>
+          <p className="text-xs text-foreground-muted ml-7">
+            {activity.config?.pairs?.length
+              ? `${activity.config.pairs.length} pairs`
+              : activity.config?.questions?.length
+                ? `${activity.config.questions.length} questions`
+                : 'Configure game content'}
+          </p>
+        </div>
+      );
+
+    case 'discussion':
+      return (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <BarChart className="h-5 w-5 text-blue-500" />
+            <span className="text-sm font-medium text-foreground">{(activity as any).title || 'Discussion'}</span>
+          </div>
+          <p className="text-xs text-foreground-muted ml-7 line-clamp-2">
+            {(activity as any).prompt || 'Discussion prompt'}
+          </p>
+        </div>
+      );
+
     // Default fallback for other types
     default: {
       const { icon: actIcon, label: actLabel } = getActivityDisplayInfo(activity);

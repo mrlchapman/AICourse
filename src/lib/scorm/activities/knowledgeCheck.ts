@@ -6,7 +6,7 @@
 import { KnowledgeCheckActivity } from './types';
 
 export function renderKnowledgeCheck(activity: KnowledgeCheckActivity): string {
-  const optionsHtml = activity.options
+  const optionsHtml = (activity.options || [])
     .map(
       (option) => `
     <div class="kc-option" data-option-id="${option.id}" data-correct="${option.correct === true}">
@@ -230,6 +230,7 @@ export function renderKnowledgeCheck(activity: KnowledgeCheckActivity): string {
 }
 
 function escapeHtml(unsafe: string): string {
+  if (!unsafe) return '';
   return unsafe
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

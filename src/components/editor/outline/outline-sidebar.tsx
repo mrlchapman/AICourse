@@ -57,13 +57,13 @@ export function OutlineSidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-        {sections.map((section) => {
+        {sections.map((section, sectionIndex) => {
           const isExpanded = expandedSections.has(section.id);
           const isSelected = section.id === selectedSectionId;
           const isEditing = editingSectionId === section.id;
 
           return (
-            <div key={section.id}>
+            <div key={`${section.id}-${sectionIndex}`}>
               {/* Section header */}
               <div
                 className={cn(
@@ -129,13 +129,13 @@ export function OutlineSidebar({
               {/* Activities list */}
               {isExpanded && (
                 <div className="ml-4 pl-2 border-l border-border/50 space-y-0.5 my-0.5">
-                  {section.activities.map((activity) => {
+                  {section.activities.map((activity, activityIndex) => {
                     const { icon, label } = getActivityDisplayInfo(activity);
                     const isActivitySelected = activity.id === selectedActivityId;
 
                     return (
                       <div
-                        key={activity.id}
+                        key={`${activity.id}-${activityIndex}`}
                         onClick={() => onSelectActivity(section.id, activity.id)}
                         className={cn(
                           'flex items-center gap-2 px-2 py-1 rounded-md cursor-pointer transition-colors text-xs',

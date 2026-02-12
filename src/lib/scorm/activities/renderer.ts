@@ -134,6 +134,9 @@ export function renderActivity(activity: Activity): string {
     case 'fill_in_blank':
       return renderFillInBlank(activity);
 
+    case 'discussion':
+      return renderDiscussion(activity);
+
     default:
       return `<div class="activity activity-error">
         <p><em>Unknown activity type</em></p>
@@ -1656,14 +1659,14 @@ function renderCodeSnippet(activity: Extract<Activity, { type: 'code_snippet' }>
 }
 
 function renderSorting(activity: Extract<Activity, { type: 'sorting' }>): string {
-  const categoriesHtml = activity.categories.map(cat => `
+  const categoriesHtml = (activity.categories || []).map(cat => `
     <div class="sorting-category" data-id="${cat.id}">
       <h4 class="category-title">${escapeHtml(cat.title)}</h4>
       <div class="drop-zone"></div>
     </div>
   `).join('');
 
-  const itemsHtml = activity.items.map(item => `
+  const itemsHtml = (activity.items || []).map(item => `
     <div class="draggable-item" draggable="true" data-id="${item.id}" data-category="${item.categoryId}">
       ${escapeHtml(item.text)}
     </div>
@@ -1774,7 +1777,7 @@ function renderSorting(activity: Extract<Activity, { type: 'sorting' }>): string
 }
 
 function renderProcess(activity: Extract<Activity, { type: 'process' }>): string {
-  const stepsHtml = activity.steps.map((step, index) => `
+  const stepsHtml = (activity.steps || []).map((step, index) => `
     <div class="process-step ${index === 0 ? 'active' : ''}" data-step="${index}">
       <div class="step-header">
         <div class="step-number">Step ${index + 1}</div>
@@ -1799,7 +1802,7 @@ function renderProcess(activity: Extract<Activity, { type: 'process' }>): string
           </button>
           
           <div class="step-indicators">
-            ${activity.steps.map((_, i) => `
+            ${(activity.steps || []).map((_, i) => `
               <div class="step-dot ${i === 0 ? 'active' : ''}" onclick="jumpToProcessStep('${activity.id}', ${i})"></div>
             `).join('')}
           </div>
@@ -1934,7 +1937,7 @@ function renderProcess(activity: Extract<Activity, { type: 'process' }>): string
 
 
 function renderMatching(activity: Extract<Activity, { type: 'matching' }>): string {
-  const leftItemsHtml = activity.pairs.map(pair => `
+  const leftItemsHtml = (activity.pairs || []).map(pair => `
     <div class="matching-item left-item" data-id="${pair.id}" onclick="handleMatchingClick(this, 'left')">
       <div class="item-content">${escapeHtml(pair.left)}</div>
       <div class="connection-point"></div>
@@ -1942,7 +1945,7 @@ function renderMatching(activity: Extract<Activity, { type: 'matching' }>): stri
   `).join('');
 
   // Shuffle right items for the game
-  const shuffledPairs = [...activity.pairs].sort(() => Math.random() - 0.5);
+  const shuffledPairs = [...(activity.pairs || [])].sort(() => Math.random() - 0.5);
   const rightItemsHtml = shuffledPairs.map(pair => `
     <div class="matching-item right-item" data-match-id="${pair.id}" onclick="handleMatchingClick(this, 'right')">
       <div class="connection-point"></div>
@@ -2071,7 +2074,7 @@ function renderMatching(activity: Extract<Activity, { type: 'matching' }>): stri
 function renderSequence(activity: Extract<Activity, { type: 'sequence' }>): string {
   // We render items in the correct order in the DOM, but client-side logic should shuffle them?
   // Or we shuffle them here. Let's shuffle them here.
-  const shuffledItems = [...activity.items].sort(() => Math.random() - 0.5);
+  const shuffledItems = [...(activity.items || [])].sort(() => Math.random() - 0.5);
 
   const itemsHtml = shuffledItems.map(item => `
     <div class="sequence-item" draggable="true" data-id="${item.id}" data-correct-order="${item.order}">
@@ -2167,4 +2170,86 @@ function renderSequence(activity: Extract<Activity, { type: 'sequence' }>): stri
       }
     </style>
   `;
+}
+
+function renderDiscussion(activity: any): string {
+  return `<div class="activity discussion-activity" id="activity-${activity.id}">
+    <div class="discussion-header">
+      <span class="discussion-icon">💬</span>
+      <h3 class="discussion-title">${escapeHtml(activity.title || 'Discussion')}</h3>
+    </div>
+    <div class="discussion-prompt">
+      <p>${escapeHtml(activity.prompt || '')}</p>
+    </div>
+    ${activity.description ? `<div class="discussion-description"><p>${escapeHtml(activity.description)}</p></div>` : ''}
+    ${activity.guidelines ? `<div class="discussion-guidelines"><strong>Guidelines:</strong><p>${escapeHtml(activity.guidelines)}</p></div>` : ''}
+    <div class="discussion-input-area">
+      <textarea class="discussion-textarea" placeholder="Share your thoughts..." rows="4"></textarea>
+      <button class="discussion-submit-btn">Post Response</button>
+    </div>
+  </div>
+  <style>
+    .discussion-activity {
+      margin: 24px 0;
+      background: var(--surface, #f8fafc);
+      border-radius: 16px;
+      border: 1px solid var(--border, #e2e8f0);
+      overflow: hidden;
+    }
+    .discussion-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border, #e2e8f0);
+      background: var(--primary-light, rgba(99,102,241,0.1));
+    }
+    .discussion-icon { font-size: 1.5rem; }
+    .discussion-title {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .discussion-prompt {
+      padding: 20px 24px;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+    .discussion-description {
+      padding: 0 24px 16px;
+      color: #6b7280;
+      font-size: 0.9rem;
+    }
+    .discussion-guidelines {
+      padding: 16px;
+      margin: 0 24px 16px;
+      background: rgba(99, 102, 241, 0.05);
+      border-radius: 10px;
+      font-size: 0.85rem;
+      color: #6b7280;
+    }
+    .discussion-input-area { padding: 0 24px 24px; }
+    .discussion-textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid var(--border, #e2e8f0);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .discussion-textarea:focus { border-color: var(--primary, #6366f1); }
+    .discussion-submit-btn {
+      margin-top: 12px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--primary, #6366f1), #8b5cf6);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>`;
 }

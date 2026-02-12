@@ -8,14 +8,18 @@ import {
   Save,
   MoreHorizontal,
   Palette,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
+import { nanoid } from 'nanoid';
 import { Button } from '@/components/ui';
 import { OutlineSidebar } from './outline/outline-sidebar';
 import { PageCanvas } from './canvas/page-canvas';
 import { InspectorPanel } from './inspector/inspector-panel';
+import { PreviewModal } from './preview/preview-modal';
+import { ThemeModal } from './theme/theme-modal';
 import { updateCourseContent } from '@/app/actions/courses';
-import type { CourseContent, CourseSection, Activity } from '@/types/activities';
+import type { CourseContent, CourseSection, Activity, CourseThemeConfig } from '@/types/activities';
 
 interface EditorShellProps {
   courseId: string;
@@ -33,6 +37,8 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [showTheme, setShowTheme] = useState(false);
 
   const selectedSection = content.sections.find((s) => s.id === selectedSectionId) || null;
   const selectedActivity = selectedSection?.activities.find((a) => a.id === selectedActivityId) || null;
@@ -40,7 +46,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
   // Section management
   const addSection = useCallback((title: string = 'New Section') => {
     const newSection: CourseSection = {
-      id: `section-${Date.now()}`,
+      id: `section-${nanoid(8)}`,
       title,
       order: content.sections.length,
       activities: [],
@@ -161,6 +167,10 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
     setContent((prev) => ({ ...prev, title }));
   }, []);
 
+  const updateTheme = useCallback((theme: CourseThemeConfig) => {
+    setContent((prev) => ({ ...prev, theme }));
+  }, []);
+
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Top Bar */}
@@ -184,10 +194,10 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
         />
 
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon-sm" title="Theme">
+          <Button variant="ghost" size="icon-sm" title="Theme" onClick={() => setShowTheme(true)}>
             <Palette className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon-sm" title="Preview">
+          <Button variant="ghost" size="icon-sm" title="Preview" onClick={() => setShowPreview(true)}>
             <Eye className="h-4 w-4" />
           </Button>
           <Button variant="ghost" size="icon-sm" title="Export SCORM">
@@ -253,6 +263,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
           <InspectorPanel
             activity={selectedActivity}
             sectionId={selectedSectionId}
+            courseContent={content}
             onUpdate={(updates) => {
               if (selectedSectionId && selectedActivityId) {
                 updateActivity(selectedSectionId, selectedActivityId, updates);
@@ -267,6 +278,23 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
           />
         )}
       </div>
+
+      {/* Preview Modal */}
+      {showPreview && (
+        <PreviewModal
+          courseContent={content}
+          onClose={() => setShowPreview(false)}
+        />
+      )}
+
+      {/* Theme Modal */}
+      {showTheme && (
+        <ThemeModal
+          theme={content.theme}
+          onUpdate={updateTheme}
+          onClose={() => setShowTheme(false)}
+        />
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ interface Props {
 
 export function AccordionEditor({ activity, onUpdate }: Props) {
   const updateSection = (index: number, updates: Record<string, string>) => {
-    const sections = activity.sections.map((s, i) =>
+    const sections = (activity.sections || []).map((s, i) =>
       i === index ? { ...s, ...updates } : s
     );
     onUpdate({ sections });
@@ -20,14 +20,14 @@ export function AccordionEditor({ activity, onUpdate }: Props) {
   const addSection = () => {
     onUpdate({
       sections: [
-        ...activity.sections,
+        ...(activity.sections || []),
         { id: `acc-${Date.now()}`, title: '', content: '' },
       ],
     });
   };
 
   const removeSection = (index: number) => {
-    onUpdate({ sections: activity.sections.filter((_, i) => i !== index) });
+    onUpdate({ sections: (activity.sections || []).filter((_, i) => i !== index) });
   };
 
   return (
@@ -44,13 +44,13 @@ export function AccordionEditor({ activity, onUpdate }: Props) {
 
       <div className="space-y-2">
         <label className="block text-sm font-medium text-foreground">
-          Sections ({activity.sections.length})
+          Sections ({(activity.sections || []).length})
         </label>
-        {activity.sections.map((sec, i) => (
+        {(activity.sections || []).map((sec, i) => (
           <div key={sec.id} className="p-2 border border-border rounded-md space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground-muted">Section {i + 1}</span>
-              {activity.sections.length > 1 && (
+              {(activity.sections || []).length > 1 && (
                 <button
                   onClick={() => removeSection(i)}
                   className="p-0.5 text-foreground-subtle hover:text-danger"
