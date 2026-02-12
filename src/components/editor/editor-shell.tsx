@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   ChevronLeft,
   Eye,
@@ -9,6 +9,8 @@ import {
   MoreHorizontal,
   Palette,
   X,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react';
 import Link from 'next/link';
 import { nanoid } from 'nanoid';
@@ -39,9 +41,33 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+  const [showOutline, setShowOutline] = useState(true);
 
   const selectedSection = content.sections.find((s) => s.id === selectedSectionId) || null;
   const selectedActivity = selectedSection?.activities.find((a) => a.id === selectedActivityId) || null;
+
+  // Save handler
+  const savingRef = useRef(false);
+  const handleSave = useCallback(async () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
+    setSaving(true);
+    await updateCourseContent(courseId, content);
+    setSaving(false);
+    savingRef.current = false;
+  }, [courseId, content]);
+
+  // Cmd+S / Ctrl+S keyboard shortcut
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleSave]);
 
   // Section management
   const addSection = useCallback((title: string = 'New Section') => {
@@ -185,6 +211,19 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
 
         <div className="h-5 w-px bg-border" />
 
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          title={showOutline ? 'Hide outline' : 'Show outline'}
+          onClick={() => setShowOutline((v) => !v)}
+        >
+          {showOutline ? (
+            <PanelLeftClose className="h-4 w-4" />
+          ) : (
+            <PanelLeft className="h-4 w-4" />
+          )}
+        </Button>
+
         <input
           type="text"
           value={content.title}
@@ -206,13 +245,9 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
           <Button
             variant="ghost"
             size="icon-sm"
-            title="Save"
+            title="Save (⌘S)"
             loading={saving}
-            onClick={async () => {
-              setSaving(true);
-              await updateCourseContent(courseId, content);
-              setSaving(false);
-            }}
+            onClick={handleSave}
           >
             <Save className="h-4 w-4" />
           </Button>
@@ -222,7 +257,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
       {/* Three Panel Layout */}
       <div className="flex-1 flex overflow-hidden">
         {/* Outline Sidebar */}
-        <OutlineSidebar
+        {showOutline && <OutlineSidebar
           sections={content.sections}
           selectedSectionId={selectedSectionId}
           selectedActivityId={selectedActivityId}
@@ -238,7 +273,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
           onDeleteSection={deleteSection}
           onUpdateSection={updateSection}
           onReorderSections={reorderSections}
-        />
+        />}
 
         {/* Page Canvas */}
         <PageCanvas
@@ -283,6 +318,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
       {showPreview && (
         <PreviewModal
           courseContent={content}
+          onUpdateTheme={updateTheme}
           onClose={() => setShowPreview(false)}
         />
       )}

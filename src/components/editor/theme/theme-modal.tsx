@@ -11,7 +11,7 @@ interface ThemeModalProps {
   onClose: () => void;
 }
 
-const THEME_PRESETS: {
+export const THEME_PRESETS: {
   id: CourseThemeConfig['themePreset'];
   name: string;
   description: string;

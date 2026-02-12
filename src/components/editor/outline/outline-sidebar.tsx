@@ -6,7 +6,7 @@ import {
   ChevronDown,
   Plus,
   Trash2,
-  GripVertical,
+  Pencil,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getActivityDisplayInfo, type CourseSection, type Activity } from '@/types/activities';
@@ -115,6 +115,16 @@ export function OutlineSidebar({
                   </span>
                 )}
 
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingSectionId(section.id);
+                  }}
+                  className="shrink-0 p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-surface-active transition-all"
+                  title="Rename section"
+                >
+                  <Pencil className="h-3 w-3" />
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

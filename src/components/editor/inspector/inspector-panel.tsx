@@ -71,6 +71,7 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
   const { icon, label } = getActivityDisplayInfo(activity);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
+  const [aiTopic, setAiTopic] = useState('');
 
   const canGenerate = AI_GENERATABLE_TYPES.includes(activity.type);
 
@@ -87,9 +88,13 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
         section?.title ? `Section: ${section.title}` : '',
       ].filter(Boolean).join('\n');
 
+      const topicContext = aiTopic.trim()
+        ? `Topic: ${aiTopic.trim()}\n${courseContext}`
+        : courseContext || 'Generate content for a learning activity';
+
       const body: Record<string, unknown> = {
         action: 'generate_activity',
-        text: courseContext || 'Generate content for a learning activity',
+        text: topicContext,
         activityType: activity.type,
       };
 
@@ -164,20 +169,34 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
       {/* Actions */}
       <div className="p-3 border-t border-border space-y-2">
         {canGenerate && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2"
-            onClick={handleAIGenerate}
-            disabled={generating}
-          >
-            {generating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            {generating ? 'Generating...' : 'AI Generate'}
-          </Button>
+          <div className="flex items-end gap-1.5">
+            <div className="flex-1 min-w-0">
+              <Input
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="Topic, e.g. photosynthesis"
+                className="text-xs"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !generating) handleAIGenerate();
+                }}
+                label="AI Topic"
+              />
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 px-2 h-10"
+              onClick={handleAIGenerate}
+              disabled={generating}
+              title="AI Generate"
+            >
+              {generating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         )}
         <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
           <Copy className="h-4 w-4" />

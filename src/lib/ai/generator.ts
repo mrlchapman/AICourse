@@ -318,13 +318,19 @@ function normalizeGamificationActivity(activity: any): void {
   if (!activity.config) activity.config = {};
 
   if (gameType === 'memory_match' && activity.config.pairs) {
+    // Fix pairs where AI returned strings instead of {type, content} objects
+    activity.config.pairs = activity.config.pairs.map((pair: any, i: number) => {
+      if (!pair.id) pair.id = `p${i + 1}`;
+      if (typeof pair.item1 === 'string') pair.item1 = { type: 'text', content: pair.item1 };
+      if (typeof pair.item2 === 'string') pair.item2 = { type: 'text', content: pair.item2 };
+      if (pair.item1 && !pair.item1.type) pair.item1.type = 'text';
+      if (pair.item2 && !pair.item2.type) pair.item2.type = 'text';
+      return pair;
+    });
     activity.config.pairs = activity.config.pairs.filter((pair: any) => {
       const hasItem1 = pair.item1?.content?.trim() || pair.item1?.imageQuery?.trim();
       const hasItem2 = pair.item2?.content?.trim() || pair.item2?.imageQuery?.trim();
       return hasItem1 && hasItem2;
-    });
-    activity.config.pairs.forEach((pair: any, i: number) => {
-      if (!pair.id) pair.id = `p${i + 1}`;
     });
   }
 
@@ -358,6 +364,11 @@ function normalizeGamificationActivity(activity: any): void {
   };
 
   const qKey = questionKeyMap[gameType];
+  // If AI returned questions under wrong key, remap to the correct one
+  if (qKey && !activity.config[qKey] && activity.config.questions && qKey !== 'questions') {
+    activity.config[qKey] = activity.config.questions;
+    delete activity.config.questions;
+  }
   if (qKey && activity.config[qKey]) {
     activity.config[qKey].forEach((q: any, i: number) => {
       if (!q.id) q.id = `${gameType.substring(0, 3)}-q${i + 1}`;
@@ -673,9 +684,21 @@ function buildActivityGenerationPrompt(
     case 'text_content':
       specificInstructions = `Create a rich HTML text block (~200 words) using h2, p, ul, li tags.`;
       break;
-    case 'gamification':
-      specificInstructions = `Create a ${subType || 'memory_match'} game with appropriate content.`;
+    case 'gamification': {
+      const gt = subType || 'memory_match';
+      const schemaMap: Record<string, string> = {
+        memory_match: `gameType: "memory_match", config: { pairs: [{id, item1: {type: "text", content: "term"}, item2: {type: "text", content: "definition"}, info: "explanation"}] } — MINIMUM 6 pairs`,
+        neon_defender: `gameType: "neon_defender", config: { startingLives: 3, questions: [{id, question, explanation, answers: [{text: "max 12 chars", correct: true/false}]}] } — MINIMUM 6 questions, 4 answers each`,
+        battleships: `gameType: "battleships", config: { gridSize: 8, shipCount: 4, battleshipsQuestions: [{id, question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 6 questions`,
+        millionaire: `gameType: "millionaire", config: { timer: 30, millionaireQuestions: [{id, question, explanation, hint, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 8 questions, increasing difficulty`,
+        the_chase: `gameType: "the_chase", config: { timer: 15, chaserAccuracy: 70, chaseQuestions: [{id, question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 8 questions`,
+        word_search: `gameType: "word_search", config: { gridSize: 12, wordSearchWords: [{id, word: "SINGLE WORD", question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 8 words`,
+        knowledge_tetris: `gameType: "knowledge_tetris", config: { questions: [{id, question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 6 questions`,
+        quiz_uno: `gameType: "quiz_uno", config: { startingCards: 5, unoQuestions: [{id, question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 6 questions`,
+      };
+      specificInstructions = `Create a ${gt} game.\n\nEXACT SCHEMA REQUIRED:\n${schemaMap[gt] || schemaMap.memory_match}\n\nThe JSON must include: type: "gamification", gameType: "${gt}", and config with the fields above.`;
       break;
+    }
     default:
       specificInstructions = `Create a ${type} activity.`;
   }
