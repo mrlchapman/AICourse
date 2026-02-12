@@ -201,7 +201,7 @@ function renderHotspot(activity: Extract<Activity, { type: 'hotspot' }>): string
       .hotspot-dot {
         width: 100%;
         height: 100%;
-        background-color: rgba(59, 130, 246, 0.9);
+        background-color: var(--primary, #3b82f6);
         color: white;
         border: 2px solid white;
         border-radius: 50%;
@@ -214,25 +214,25 @@ function renderHotspot(activity: Extract<Activity, { type: 'hotspot' }>): string
       }
       .hotspot-marker:hover .hotspot-dot {
         transform: scale(1.1);
-        background-color: #2563eb;
+        opacity: 0.9;
       }
       .hotspot-popup {
         position: absolute;
         bottom: 100%;
         left: 50%;
         transform: translateX(-50%) translateY(-10px);
-        background: white;
+        background: var(--card-bg, white);
         padding: 12px;
         border-radius: 8px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,0.1));
         width: 250px;
         opacity: 0;
         visibility: hidden;
         transition: all 0.2s ease;
         pointer-events: none;
         z-index: 20;
-        border: 1px solid #e5e7eb;
-        text-align: left; /* Ensure text inside popup is readable */
+        border: 1px solid var(--card-border, #e5e7eb);
+        text-align: left;
       }
       .hotspot-popup::after {
         content: '';
@@ -242,7 +242,7 @@ function renderHotspot(activity: Extract<Activity, { type: 'hotspot' }>): string
         margin-left: -8px;
         border-width: 8px;
         border-style: solid;
-        border-color: white transparent transparent transparent;
+        border-color: var(--card-bg, white) transparent transparent transparent;
       }
       .hotspot-marker:hover .hotspot-popup {
         opacity: 1;
@@ -258,12 +258,12 @@ function renderHotspot(activity: Extract<Activity, { type: 'hotspot' }>): string
       }
       .hotspot-popup h5 {
         margin: 0 0 8px 0;
-        color: #111827;
+        color: var(--text, #111827);
         font-size: 16px;
         font-weight: 600;
       }
       .hotspot-content {
-        color: #4b5563;
+        color: var(--text-muted, #4b5563);
         font-size: 14px;
         line-height: 1.5;
       }
@@ -701,9 +701,9 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         margin: 24px 0;
       }
       .iv-container {
-        border-radius: 12px;
+        border-radius: var(--radius-lg, 14px);
         overflow: hidden;
-        background: #1a1a2e;
+        background: var(--surface, #1a1a2e);
       }
       .iv-video-wrapper {
         position: relative;
@@ -720,13 +720,13 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       }
       .iv-progress-bar {
         position: relative;
-        height: 6px;
-        background: #2d2d44;
+        height: 4px;
+        background: var(--border, #2d2d44);
         cursor: pointer;
       }
       .iv-progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #6366f1, #8b5cf6);
+        background: var(--primary, #6366f1);
         width: 0%;
         transition: width 0.1s linear;
       }
@@ -744,8 +744,8 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         transform: translate(-50%, -50%);
         width: 18px;
         height: 18px;
-        background: #1a1a2e;
-        border: 2px solid #6366f1;
+        background: var(--surface, #1a1a2e);
+        border: 2px solid var(--primary, #6366f1);
         border-radius: 50%;
         font-size: 10px;
         display: flex;
@@ -768,12 +768,12 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         display: flex;
         justify-content: space-between;
         align-items: center;
-        background: #16162a;
+        background: var(--surface, #16162a);
         font-size: 14px;
-        color: #a0a0b0;
+        color: var(--text-muted, #a0a0b0);
       }
       .iv-required-badge {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        background: var(--primary, #6366f1);
         color: white;
         padding: 4px 10px;
         border-radius: 12px;
@@ -783,7 +783,7 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       .iv-caption {
         margin-top: 12px;
         font-style: italic;
-        color: #6b7280;
+        color: var(--text-muted, #6b7280);
       }
 
     </style>
@@ -828,13 +828,14 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         to { opacity: 1; }
       }
       .iv-modal-content {
-        background: linear-gradient(180deg, #1e1e3f 0%, #16162a 100%);
-        border-radius: 16px;
+        background: var(--card-bg, #1e1e3f);
+        border: 1px solid var(--card-border, #2d2d44);
+        border-radius: var(--radius-lg, 14px);
         max-width: 500px;
         width: 90%;
         max-height: 80vh;
         overflow-y: auto;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        box-shadow: var(--shadow-lg, 0 8px 24px rgba(0,0,0,0.12));
         animation: ivSlideUp 0.3s ease;
       }
       @keyframes ivSlideUp {
@@ -843,7 +844,7 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       }
       .iv-modal-header {
         padding: 20px 24px;
-        border-bottom: 1px solid #2d2d44;
+        border-bottom: 1px solid var(--border, #2d2d44);
         display: flex;
         align-items: center;
         gap: 12px;
@@ -851,7 +852,7 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       .iv-modal-header h3 {
         margin: 0;
         font-size: 18px;
-        color: white;
+        color: var(--text, white);
       }
       .iv-modal-icon {
         font-size: 24px;
@@ -861,7 +862,7 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       }
       .iv-question-text {
         font-size: 16px;
-        color: white;
+        color: var(--text, white);
         margin-bottom: 20px;
         line-height: 1.5;
       }
@@ -875,21 +876,20 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         align-items: center;
         gap: 12px;
         padding: 14px 16px;
-        background: #2d2d44;
+        background: var(--surface, #2d2d44);
         border: 2px solid transparent;
-        border-radius: 10px;
+        border-radius: var(--radius-md, 10px);
         cursor: pointer;
         transition: all 0.2s;
         text-align: left;
-        color: white;
+        color: var(--text, white);
       }
       .iv-option-btn:hover:not(:disabled) {
-        background: #3d3d54;
-        border-color: #6366f1;
+        border-color: var(--primary, #6366f1);
       }
       .iv-option-btn.selected {
-        border-color: #6366f1;
-        background: rgba(99, 102, 241, 0.2);
+        border-color: var(--primary, #6366f1);
+        background: rgba(99, 102, 241, 0.15);
       }
       .iv-option-btn.correct {
         border-color: #22c55e;
@@ -906,7 +906,7 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       .iv-option-letter {
         width: 28px;
         height: 28px;
-        background: #16162a;
+        background: var(--card-bg, #16162a);
         border-radius: 6px;
         display: flex;
         align-items: center;
@@ -920,9 +920,9 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       .iv-feedback {
         margin-top: 16px;
         padding: 16px;
-        border-radius: 10px;
-        background: rgba(99, 102, 241, 0.1);
-        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: var(--radius-md, 10px);
+        background: var(--surface, rgba(99, 102, 241, 0.1));
+        border: 1px solid var(--border, rgba(99, 102, 241, 0.3));
       }
       .iv-feedback.correct {
         background: rgba(34, 197, 94, 0.1);
@@ -934,7 +934,7 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
       }
       .iv-feedback-text {
         margin: 0;
-        color: #d0d0e0;
+        color: var(--text-muted, #d0d0e0);
         font-size: 14px;
         line-height: 1.5;
       }
@@ -946,9 +946,9 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         width: calc(100% - 48px);
         margin: 0 24px 24px;
         padding: 14px;
-        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        background: var(--primary, #6366f1);
         border: none;
-        border-radius: 10px;
+        border-radius: var(--radius-md, 10px);
         color: white;
         font-size: 15px;
         font-weight: 600;
@@ -956,8 +956,8 @@ function renderInteractiveVideo(activity: Extract<Activity, { type: 'interactive
         transition: all 0.2s;
       }
       .iv-continue-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        transform: translateY(-1px);
+        opacity: 0.9;
       }
       .iv-completion-message {
         margin-top: 16px;

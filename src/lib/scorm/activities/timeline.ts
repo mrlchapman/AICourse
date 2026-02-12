@@ -83,29 +83,18 @@ export function renderTimeline(activity: TimelineActivity): string {
   }
 
   .timeline-dot {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), #a855f7);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
     color: white;
     font-weight: 700;
-    font-size: 1rem;
-    box-shadow: 0 4px 20px var(--primary-glow);
+    font-size: 0.9rem;
     position: relative;
     z-index: 2;
-  }
-
-  .timeline-dot::before {
-    content: '';
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), #a855f7);
-    opacity: 0.3;
-    z-index: -1;
   }
 
   .timeline-icon {
@@ -127,19 +116,16 @@ export function renderTimeline(activity: TimelineActivity): string {
   .timeline-content {
     flex: 1;
     background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 14px);
     border: 1px solid var(--card-border);
     padding: 24px;
     margin-bottom: 24px;
-    box-shadow: var(--card-shadow);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+    transition: border-color 0.2s ease;
   }
 
   .timeline-content:hover {
     border-color: var(--primary-light);
-    transform: translateX(8px);
   }
 
   .timeline-date {

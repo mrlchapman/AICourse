@@ -90,9 +90,9 @@ export function generateCourseHtml(
     --bg-gradient-1: #f8fafc;
     --bg-gradient-2: #eef2ff;
     --text: ${theme.textColor};
-    --card-bg: rgba(255, 255, 255, 0.85);
-    --card-border: rgba(148, 163, 184, 0.2);
-    --card-shadow: 0 4px 20px rgba(100, 116, 139, 0.1);
+    --card-bg: #ffffff;
+    --card-border: rgba(226, 232, 240, 1);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     --text-muted: #64748b;
     --surface: rgba(241, 245, 249, 0.9);
     --surface-solid: #f1f5f9;
@@ -117,9 +117,9 @@ export function generateCourseHtml(
     --bg-gradient-1: #0f172a;
     --bg-gradient-2: #1e1b4b;
     --text: ${theme.textColor};
-    --card-bg: rgba(30, 41, 59, 0.6);
-    --card-border: rgba(148, 163, 184, 0.12);
-    --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --card-bg: rgba(30, 41, 59, 0.9);
+    --card-border: rgba(148, 163, 184, 0.15);
+    --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     --text-muted: #94a3b8;
     --surface: rgba(51, 65, 85, 0.5);
     --surface-solid: #1e293b;
@@ -260,7 +260,7 @@ export function generateCourseHtml(
 
   // Light theme background CSS
   const lightBgStyles = `
-    /* Light theme: Clean gradient with subtle patterns */
+    /* Light theme: Clean flat gradient */
     body::before {
       content: '';
       position: fixed;
@@ -268,35 +268,15 @@ export function generateCourseHtml(
       left: 0;
       right: 0;
       bottom: 0;
-      background: 
-        linear-gradient(135deg, #f8fafc 0%, #eef2ff 50%, #faf5ff 100%);
+      background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
       pointer-events: none;
       z-index: -2;
-    }
-    
-    /* Subtle decorative shapes */
-    body::after {
-      content: '';
-      position: fixed;
-      top: -50%;
-      right: -20%;
-      width: 80%;
-      height: 80%;
-      background: radial-gradient(ellipse, ${theme.primaryColor}08, transparent 60%);
-      pointer-events: none;
-      z-index: -1;
-      animation: floatLight 25s ease-in-out infinite alternate;
-    }
-    
-    @keyframes floatLight {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      100% { transform: translate(-5%, 10%) rotate(10deg); }
     }
   `;
 
   // Dark theme background CSS
   const darkBgStyles = `
-    /* Dark theme: Animated gradient with glow effects */
+    /* Dark theme: Static subtle radial gradient */
     body::before {
       content: '';
       position: fixed;
@@ -305,18 +285,10 @@ export function generateCourseHtml(
       right: 0;
       bottom: 0;
       background:
-        radial-gradient(ellipse 80% 50% at 20% 40%, ${theme.primaryColor}18, transparent 50%),
-        radial-gradient(ellipse 60% 40% at 80% 60%, #14b8a618, transparent 50%),
-        radial-gradient(ellipse 50% 30% at 50% 90%, #a855f710, transparent 50%);
+        radial-gradient(ellipse 80% 50% at 50% 0%, ${theme.primaryColor}12, transparent 60%),
+        linear-gradient(180deg, #0f172a 0%, #0f172a 100%);
       pointer-events: none;
       z-index: -1;
-      animation: pulseGlow 20s ease-in-out infinite alternate;
-    }
-
-    @keyframes pulseGlow {
-      0% { opacity: 0.6; }
-      50% { opacity: 1; }
-      100% { opacity: 0.8; }
     }
   `;
 
@@ -1328,6 +1300,21 @@ export function generateCourseHtml(
         theme.themePreset === 'editorial' ? editorialLightThemeVars :
         theme.themePreset === 'editorial-dark' ? editorialDarkThemeVars :
         isDarkTheme ? darkThemeVars : lightThemeVars}
+      /* Design tokens */
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --space-2xl: 48px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+      --transition-fast: 150ms ease;
+      --transition-normal: 250ms ease;
     }
     
     * {
@@ -1338,6 +1325,7 @@ export function generateCourseHtml(
     
     body {
       font-family: ${theme.fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
       background: var(--bg);
       color: var(--text);
       line-height: 1.7;
@@ -1374,75 +1362,52 @@ export function generateCourseHtml(
     }
     
     h1, h2, h3, h4, h5, h6 {
-      margin-bottom: 16px;
-      margin-top: 24px;
+      margin-bottom: var(--space-md);
+      margin-top: var(--space-lg);
       font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    
-    /* Course Title - Premium gradient with glow */
-    h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, ${theme.primaryColor} 0%, #ec4899 50%, #f97316 100%);
-      background-size: 200% 200%;
-      animation: gradientShift 8s ease infinite;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-top: 0;
-      margin-bottom: 16px;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      text-shadow: 0 0 80px ${theme.primaryColor}40;
+      letter-spacing: -0.025em;
     }
 
-    @keyframes gradientShift {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
+    /* Course Title */
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 0;
+      margin-bottom: var(--space-md);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
     }
     
     /* Course description styling */
     .course-description {
-      font-size: 1.2rem;
+      font-size: 1.1rem;
+      font-weight: 400;
       color: var(--text-muted);
-      margin-bottom: 48px;
-      padding-bottom: 32px;
+      margin-bottom: var(--space-2xl);
+      padding-bottom: var(--space-xl);
       border-bottom: 1px solid var(--border);
       line-height: 1.8;
+      max-width: 680px;
     }
     
-    /* Section Title - Glass morphism card style */
+    /* Section Title - Clean with bottom border */
     .course-section > h2 {
-      font-size: 1.35rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: var(--text);
-      background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      padding: 20px 28px;
-      border-radius: 16px;
-      border: 1px solid var(--card-border);
-      border-left: 4px solid var(--primary);
-      margin-top: 56px;
-      margin-bottom: 32px;
+      background: transparent;
+      padding: 0 0 var(--space-sm) 0;
+      border: none;
+      border-bottom: 2px solid var(--primary);
+      border-radius: 0;
+      margin-top: var(--space-2xl);
+      margin-bottom: var(--space-xl);
       display: flex;
       align-items: center;
       gap: 12px;
-      box-shadow: var(--card-shadow);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .course-section > h2::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--primary), transparent);
-      opacity: 0.5;
+      box-shadow: none;
+      letter-spacing: -0.025em;
     }
     
     /* First section shouldn't have as much top margin */
@@ -1453,32 +1418,32 @@ export function generateCourseHtml(
     /* Activity content h2 */
     .activity h2,
     .text-content h2 {
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       font-weight: 700;
       color: var(--text);
       background: none;
       padding: 0;
       border-radius: 0;
       border-left: none;
-      margin-top: 32px;
-      margin-bottom: 16px;
+      margin-top: var(--space-xl);
+      margin-bottom: var(--space-md);
     }
-    
+
     /* Activity Title */
     h3, .activity-title {
-      font-size: 1.4rem;
+      font-size: 1.25rem;
       font-weight: 600;
       color: var(--text);
-      margin-top: 24px;
-      margin-bottom: 16px;
+      margin-top: var(--space-lg);
+      margin-bottom: var(--space-md);
     }
-    
+
     /* Sub-headings within activities */
     h4 {
       font-size: 1.1rem;
       font-weight: 600;
       color: var(--text);
-      margin-top: 20px;
+      margin-top: var(--space-lg);
     }
     
     h5, h6 {
@@ -1515,9 +1480,9 @@ export function generateCourseHtml(
     img {
       max-width: 100%;
       height: auto;
-      border-radius: 16px;
-      margin: 24px 0;
-      box-shadow: var(--card-shadow);
+      border-radius: var(--radius-md);
+      margin: var(--space-lg) 0;
+      box-shadow: var(--shadow-sm);
     }
 
     /* Header image styles */
@@ -1547,92 +1512,77 @@ export function generateCourseHtml(
       box-shadow: none;
     }
     
-    /* Premium Button Styles */
+    /* Button Styles */
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      padding: 14px 28px;
-      background: linear-gradient(135deg, var(--primary), #a855f7);
+      padding: 12px 24px;
+      background: var(--primary);
       color: white;
       text-decoration: none;
-      border-radius: 12px;
+      border-radius: var(--radius-md);
       border: none;
       cursor: pointer;
       font-size: 1rem;
       font-weight: 600;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 20px var(--primary-glow);
+      transition: all var(--transition-normal);
+      box-shadow: var(--shadow-sm);
       position: relative;
       overflow: hidden;
     }
 
-    .btn::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      transition: left 0.5s;
-    }
-    
     .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 30px var(--primary-glow);
-    }
-
-    .btn:hover::before {
-      left: 100%;
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+      background: color-mix(in srgb, var(--primary) 85%, black);
     }
 
     .btn:active {
-      transform: translateY(-1px);
+      transform: translateY(0);
     }
-    
+
     .btn-success {
-      background: linear-gradient(135deg, #10b981, #14b8a6);
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      background: #10b981;
+      box-shadow: var(--shadow-sm);
     }
 
     .btn-success:hover {
-      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
+      background: color-mix(in srgb, #10b981 85%, black);
+      box-shadow: var(--shadow-md);
     }
     
     .progress-bar {
       width: 100%;
-      height: 6px;
+      height: 4px;
       background: var(--surface);
-      border-radius: 3px;
+      border-radius: 2px;
       overflow: hidden;
       margin: 20px 0;
     }
-    
+
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary), #a855f7);
+      background: var(--primary);
       transition: width 0.5s ease;
-      border-radius: 3px;
+      border-radius: 2px;
     }
     
     /* Activity Card Base Style */
     .activity {
       background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: 20px;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--card-border);
-      padding: 28px;
-      margin: 40px 0;
+      padding: var(--space-lg);
+      margin: var(--space-xl) 0;
       box-shadow: var(--card-shadow);
-      transition: all 0.3s ease;
+      transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
     }
 
     .activity:hover {
-      border-color: var(--primary-light);
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+      box-shadow: var(--shadow-md);
     }
 
     /* Text content specific styling */
@@ -1650,11 +1600,10 @@ export function generateCourseHtml(
     }
 
     .section {
-      margin-bottom: 40px;
-      padding: 28px;
+      margin-bottom: var(--space-xl);
+      padding: var(--space-lg);
       background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      border-radius: 20px;
+      border-radius: var(--radius-lg);
       border: 1px solid var(--card-border);
     }
 
@@ -1671,7 +1620,7 @@ export function generateCourseHtml(
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(10px);
       }
       to {
         opacity: 1;
@@ -1688,27 +1637,21 @@ export function generateCourseHtml(
     }
 
     .next-section-btn {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all var(--transition-normal);
     }
 
-    .next-section-btn:hover {
-      transform: translateX(8px) translateY(-3px);
-    }
-
-    /* Premium Progress Sidebar Styles */
+    /* Progress Sidebar Styles */
     .progress-sidebar {
       position: fixed;
       left: 0;
       top: 0;
       height: 100vh;
-      width: 300px;
+      width: 260px;
       background: var(--sidebar-bg);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
       border-right: 1px solid var(--card-border);
       z-index: 999999;
       transform: translateX(-100%);
-      transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: transform 0.3s ease;
       display: flex;
       flex-direction: column;
       box-sizing: border-box;
@@ -1719,20 +1662,21 @@ export function generateCourseHtml(
     }
 
     .progress-sidebar-header {
-      padding: 24px 20px;
+      padding: 20px var(--space-md);
       border-bottom: 1px solid var(--card-border);
-      background: linear-gradient(135deg, var(--primary-light), transparent);
+      background: transparent;
     }
 
     .progress-sidebar-title {
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text);
-      margin: 0 0 16px 0;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin: 0 0 var(--space-md) 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      letter-spacing: -0.01em;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
 
     .sidebar-toggle {
@@ -1769,26 +1713,19 @@ export function generateCourseHtml(
 
     .progress-bar {
       width: 100%;
-      height: 8px;
+      height: 4px;
       background: var(--surface);
-      border-radius: 4px;
+      border-radius: 2px;
       overflow: hidden;
       margin: 0;
     }
 
     .progress-bar-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--primary), #a855f7, #ec4899);
-      background-size: 200% 100%;
-      animation: shimmer 2s ease-in-out infinite;
-      border-radius: 4px;
-      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--primary);
+      border-radius: 2px;
+      transition: width 0.5s ease;
       width: 0%;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
     }
 
     .progress-summary {
@@ -1813,22 +1750,20 @@ export function generateCourseHtml(
     .section-item {
       display: flex;
       align-items: center;
-      padding: 14px 16px;
-      border-radius: 12px;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      transition: background var(--transition-fast);
       cursor: pointer;
       border: 1px solid transparent;
     }
 
     .section-item:hover:not(.locked) {
       background: var(--surface);
-      transform: translateX(4px);
     }
 
     .section-item.current {
       background: var(--primary-light);
       border-color: var(--primary);
-      box-shadow: 0 0 20px var(--primary-glow);
     }
 
     .section-item.locked {
@@ -1837,23 +1772,22 @@ export function generateCourseHtml(
     }
 
     .section-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      margin-right: 12px;
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      margin-right: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       font-weight: 600;
-      transition: all 0.3s;
+      transition: all var(--transition-fast);
     }
 
     .section-icon.completed {
-      background: linear-gradient(135deg, #10b981, #14b8a6);
+      background: #10b981;
       color: white;
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
     .section-icon.current,
@@ -1876,8 +1810,8 @@ export function generateCourseHtml(
     }
 
     .section-title {
-      font-size: 0.9rem;
-      font-weight: 600;
+      font-size: 0.85rem;
+      font-weight: 500;
       color: var(--text);
       white-space: nowrap;
       overflow: hidden;
@@ -1908,27 +1842,24 @@ export function generateCourseHtml(
       left: 20px;
       z-index: 999998;
       background: var(--card-bg);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 14px;
+      border-radius: var(--radius-md);
+      padding: 12px;
       cursor: pointer;
       color: var(--text);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all var(--transition-fast);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: var(--card-shadow);
+      box-shadow: var(--shadow-sm);
       opacity: 1;
       visibility: visible;
     }
 
     .mobile-toggle:hover {
-      background: var(--primary-light);
+      background: var(--surface);
       border-color: var(--primary);
       color: var(--primary);
-      transform: scale(1.05);
     }
 
     /* Hide floating toggle when sidebar is open on desktop (since sidebar has its own close button) */
@@ -1942,7 +1873,7 @@ export function generateCourseHtml(
 
       /* Desktop: Sidebar pushes content instead of overlaying */
       body.sidebar-open {
-        padding-left: 300px; /* Push content */
+        padding-left: 260px; /* Push content */
         overflow-y: auto !important; /* Enable scrolling */
       }
 
@@ -1980,7 +1911,7 @@ export function generateCourseHtml(
     }
 
     body.sidebar-open {
-      padding-left: 300px;
+      padding-left: 260px;
     }
 
     body {
@@ -1992,42 +1923,41 @@ export function generateCourseHtml(
       .course-header-image {
         height: 180px;
       }
-      
+
       body.sidebar-open {
         padding-left: 0;
       }
 
       .course-container {
-        padding: 24px 16px;
+        padding: var(--space-lg) var(--space-md);
       }
 
       h1 {
-        font-size: 2rem;
+        font-size: 1.75rem;
       }
 
       .course-section > h2 {
-        font-size: 1.1rem;
-        padding: 16px 20px;
-        margin-top: 40px;
-        border-radius: 14px;
+        font-size: 1.2rem;
+        padding: 0 0 var(--space-sm) 0;
+        margin-top: var(--space-xl);
       }
 
       h3, .activity-title {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
       }
 
       p {
         font-size: 1rem;
       }
-      
+
       .course-description {
         font-size: 1rem;
-        margin-bottom: 32px;
-        padding-bottom: 24px;
+        margin-bottom: var(--space-lg);
+        padding-bottom: var(--space-md);
       }
 
       .progress-sidebar {
-        width: 280px;
+        width: 260px;
       }
 
       .mobile-toggle {
@@ -2037,18 +1967,38 @@ export function generateCourseHtml(
       }
 
       body.sidebar-open .mobile-toggle {
-        transform: translateX(280px);
+        transform: translateX(260px);
       }
 
       .activity {
-        padding: 20px;
-        border-radius: 16px;
-        margin: 32px 0;
+        padding: var(--space-md);
+        border-radius: var(--radius-md);
+        margin: var(--space-lg) 0;
       }
 
       .btn {
-        padding: 12px 24px;
+        padding: 10px 20px;
         font-size: 0.95rem;
+      }
+    }
+
+    /* Phone breakpoint */
+    @media (max-width: 480px) {
+      .course-container {
+        padding: var(--space-md) var(--space-sm);
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .course-section > h2 {
+        font-size: 1.1rem;
+      }
+
+      .activity {
+        padding: var(--space-sm) var(--space-md);
+        margin: var(--space-md) 0;
       }
     }
 
@@ -2129,25 +2079,17 @@ export function generateCourseHtml(
     .reset-btn:hover {
       background: var(--border);
       box-shadow: none;
-      transform: translateY(-2px);
     }
 
     /* ========================================
-       MICRO-INTERACTIONS & CELEBRATIONS
+       MICRO-INTERACTIONS (Simplified)
        ======================================== */
 
-    /* Animated Gradient Progress Bars */
+    /* Progress Bars - solid primary */
     .progress-fill,
     .progress-bar-fill,
     .quiz-progress .progress-fill {
-      background: linear-gradient(90deg, var(--primary), #a855f7, #ec4899, var(--primary));
-      background-size: 200% 100%;
-      animation: gradientFlow 2s linear infinite;
-    }
-
-    @keyframes gradientFlow {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 200% 50%; }
+      background: var(--primary);
     }
 
     /* Confetti Celebration for Correct Answers */
@@ -2182,137 +2124,17 @@ export function generateCourseHtml(
     }
 
     @keyframes confettiFall {
-      0% {
-        opacity: 1;
-        transform: translateY(-10px) rotate(0deg) scale(1);
-      }
-      50% {
-        opacity: 1;
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(100vh) rotate(720deg) scale(0.3);
-      }
+      0% { opacity: 1; transform: translateY(-10px) rotate(0deg) scale(1); }
+      50% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(100vh) rotate(720deg) scale(0.3); }
     }
 
-    /* Enhanced Correct Answer Glow Effect */
+    /* Correct Answer - simple border-color transition */
     .correct-answer,
     .kc-option.correct,
     .quiz-option.correct-answer {
-      position: relative;
-      overflow: visible;
-    }
-
-    .correct-answer::after,
-    .kc-option.correct::after,
-    .quiz-option.correct-answer::after {
-      content: '';
-      position: absolute;
-      top: -4px;
-      left: -4px;
-      right: -4px;
-      bottom: -4px;
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(20, 184, 166, 0.2));
-      border-radius: inherit;
-      z-index: -1;
-      animation: correctGlow 0.6s ease-out;
-    }
-
-    @keyframes correctGlow {
-      0% {
-        opacity: 0;
-        transform: scale(0.95);
-      }
-      50% {
-        opacity: 1;
-        transform: scale(1.02);
-      }
-      100% {
-        opacity: 1;
-        transform: scale(1);
-      }
-    }
-
-    /* Sparkle Effect for Achievements */
-    .sparkle-effect {
-      position: relative;
-    }
-
-    .sparkle-effect::before,
-    .sparkle-effect::after {
-      content: '✦';
-      position: absolute;
-      font-size: 1.2rem;
-      opacity: 0;
-      animation: sparkle 1.5s ease-in-out infinite;
-    }
-
-    .sparkle-effect::before {
-      top: -8px;
-      left: 10%;
-      animation-delay: 0s;
-    }
-
-    .sparkle-effect::after {
-      top: -8px;
-      right: 10%;
-      animation-delay: 0.5s;
-    }
-
-    @keyframes sparkle {
-      0%, 100% {
-        opacity: 0;
-        transform: scale(0) rotate(0deg);
-      }
-      50% {
-        opacity: 1;
-        transform: scale(1) rotate(180deg);
-        color: #fbbf24;
-      }
-    }
-
-    /* Pulse Effect for Important Elements */
-    .pulse-effect {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-
-    /* Success Celebration Bounce */
-    .celebration-bounce {
-      animation: celebrationBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    }
-
-    @keyframes celebrationBounce {
-      0% { transform: scale(0.3); opacity: 0; }
-      50% { transform: scale(1.1); }
-      70% { transform: scale(0.9); }
-      100% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Ripple Effect for Buttons */
-    .btn {
-      position: relative;
-      overflow: hidden;
-    }
-
-    .btn .ripple {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.4);
-      transform: scale(0);
-      animation: rippleEffect 0.6s linear;
-      pointer-events: none;
-    }
-
-    @keyframes rippleEffect {
-      to {
-        transform: scale(4);
-        opacity: 0;
-      }
+      border-color: var(--success) !important;
+      transition: border-color var(--transition-normal);
     }
 
     /* Score Counter Animation */
@@ -2322,87 +2144,35 @@ export function generateCourseHtml(
 
     @keyframes scorePop {
       0% { transform: scale(1); }
-      50% { transform: scale(1.4); color: var(--success); }
+      50% { transform: scale(1.2); color: var(--success); }
       100% { transform: scale(1); }
     }
 
-    /* Streak Fire Animation */
-    .streak-fire {
-      display: inline-block;
-      animation: fireFlicker 0.5s ease-in-out infinite alternate;
-    }
-
-    @keyframes fireFlicker {
-      0% { transform: scale(1) rotate(-3deg); filter: brightness(1); }
-      100% { transform: scale(1.1) rotate(3deg); filter: brightness(1.2); }
-    }
-
-    /* Shake Animation for Incorrect Answers (Enhanced) */
+    /* Shake Animation for Incorrect Answers */
     .shake-enhanced {
-      animation: shakeEnhanced 0.6s cubic-bezier(.36,.07,.19,.97) both;
+      animation: shakeEnhanced 0.5s cubic-bezier(.36,.07,.19,.97) both;
     }
 
     @keyframes shakeEnhanced {
       0%, 100% { transform: translateX(0); }
-      10% { transform: translateX(-8px) rotate(-1deg); }
-      20% { transform: translateX(8px) rotate(1deg); }
-      30% { transform: translateX(-8px) rotate(-1deg); }
-      40% { transform: translateX(8px) rotate(1deg); }
-      50% { transform: translateX(-4px) rotate(0deg); }
-      60% { transform: translateX(4px) rotate(0deg); }
-      70% { transform: translateX(-2px); }
-      80% { transform: translateX(2px); }
-      90% { transform: translateX(-1px); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-3px); }
+      80% { transform: translateX(3px); }
     }
 
-    /* Floating Animation for Decorative Elements */
-    .float-animation {
-      animation: float 3s ease-in-out infinite;
+    /* Ripple Effect for Buttons */
+    .btn .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: scale(0);
+      animation: rippleEffect 0.6s linear;
+      pointer-events: none;
     }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0px); }
-      50% { transform: translateY(-10px); }
-    }
-
-    /* Glowing Border Animation */
-    .glow-border {
-      animation: glowBorder 2s ease-in-out infinite alternate;
-    }
-
-    @keyframes glowBorder {
-      0% { box-shadow: 0 0 5px var(--primary-glow), 0 0 10px var(--primary-glow); }
-      100% { box-shadow: 0 0 15px var(--primary-glow), 0 0 30px var(--primary-glow); }
-    }
-
-    /* Typewriter Effect for Feedback */
-    .typewriter-text {
-      overflow: hidden;
-      border-right: 2px solid var(--primary);
-      white-space: nowrap;
-      animation: typing 1s steps(30, end), blinkCaret 0.75s step-end infinite;
-    }
-
-    @keyframes typing {
-      from { width: 0; }
-      to { width: 100%; }
-    }
-
-    @keyframes blinkCaret {
-      from, to { border-color: transparent; }
-      50% { border-color: var(--primary); }
-    }
-
-    /* Success Checkmark Animation */
-    .success-checkmark {
-      display: inline-block;
-      animation: checkmarkDraw 0.4s ease-in-out forwards;
-    }
-
-    @keyframes checkmarkDraw {
-      0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-      50% { transform: scale(1.2) rotate(0deg); }
-      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    @keyframes rippleEffect {
+      to { transform: scale(4); opacity: 0; }
     }
 
     /* Points Counter Fly-up Animation */
@@ -2416,38 +2186,22 @@ export function generateCourseHtml(
     }
 
     @keyframes flyUp {
-      0% {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-      100% {
-        opacity: 0;
-        transform: translateY(-50px) scale(0.8);
-      }
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-40px); }
     }
 
-    /* Interactive Card Hover Enhancement */
+    /* Interactive Card */
     .interactive-card {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
     }
 
-    .interactive-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 
-        0 20px 40px rgba(0, 0, 0, 0.15),
-        0 0 0 1px var(--primary-light);
-    }
-
-    /* Loading Skeleton Animation */
-    .skeleton-loading {
-      background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%);
-      background-size: 200% 100%;
-      animation: skeletonWave 1.5s ease-in-out infinite;
-    }
-
-    @keyframes skeletonWave {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+    /* Prefers Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>

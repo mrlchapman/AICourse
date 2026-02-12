@@ -54,9 +54,9 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
   }
 
   .scenario-container {
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 20px;
+    background: var(--surface, #f1f5f9);
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: var(--radius-lg, 14px);
     padding: 32px;
     max-width: 800px;
     margin: 0 auto;
@@ -73,10 +73,7 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
     font-size: 1.5rem;
     font-weight: 700;
     margin: 0 0 8px 0;
-    background: linear-gradient(135deg, #818cf8, #c084fc);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--text, #1e293b);
   }
 
   .scenario-desc {
@@ -90,17 +87,17 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
   }
 
   .progress-bar {
-    height: 6px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
+    height: 4px;
+    background: var(--border, #e2e8f0);
+    border-radius: 2px;
     overflow: hidden;
     margin-bottom: 8px;
   }
 
   .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #6366f1, #a855f7);
-    border-radius: 3px;
+    background: var(--primary, #6366f1);
+    border-radius: 2px;
     width: 10%;
     transition: width 0.5s ease;
   }
@@ -112,8 +109,9 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
   }
 
   .scenario-content {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 16px;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, #e2e8f0);
+    border-radius: var(--radius-lg, 14px);
     padding: 24px;
     margin-bottom: 24px;
     min-height: 120px;
@@ -141,28 +139,28 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
     align-items: center;
     gap: 12px;
     padding: 16px 20px;
-    background: rgba(99, 102, 241, 0.15);
-    border: 1px solid rgba(99, 102, 241, 0.3);
-    border-radius: 12px;
+    background: var(--surface, #f1f5f9);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius-md, 10px);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
     text-align: left;
     width: 100%;
     font-size: 1rem;
-    color: var(--text-primary);
+    color: var(--text, #1e293b);
   }
 
   .choice-btn:hover {
-    background: rgba(99, 102, 241, 0.25);
-    border-color: rgba(99, 102, 241, 0.5);
-    transform: translateX(8px);
+    background: var(--primary-light, rgba(99, 102, 241, 0.1));
+    border-color: var(--primary, #6366f1);
   }
 
   .choice-btn .choice-icon {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: var(--primary, #6366f1);
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -270,12 +268,12 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: #1e1b4b; /* Dark indigo */
-    border: 1px solid #6366f1;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-    color: white;
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, #e2e8f0);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
+    color: var(--text, #1e293b);
     padding: 32px;
-    border-radius: 16px;
+    border-radius: var(--radius-lg, 14px);
     font-size: 1.1rem;
     z-index: 10000;
     animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -286,7 +284,7 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
     flex-direction: column;
     gap: 20px;
     align-items: center;
-    border-top: 4px solid #818cf8;
+    border-top: 3px solid var(--primary, #6366f1);
   }
 
   .feedback-icon {
@@ -296,15 +294,15 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
 
   .feedback-content {
     line-height: 1.6;
-    color: #e0e7ff;
+    color: var(--text-muted, #64748b);
   }
 
   .feedback-close-btn {
-    background: #4f46e5;
+    background: var(--primary, #6366f1);
     color: white;
     border: none;
     padding: 10px 28px;
-    border-radius: 8px;
+    border-radius: var(--radius-md, 10px);
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
@@ -313,11 +311,10 @@ export function renderBranchingScenario(activity: BranchingScenarioActivity): st
     align-items: center;
     gap: 8px;
   }
-  
+
   .feedback-close-btn:hover {
-    background: #4338ca;
+    opacity: 0.9;
     transform: translateY(-1px);
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
   }
 
   @keyframes scaleIn {

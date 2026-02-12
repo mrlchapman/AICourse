@@ -52,12 +52,10 @@ export function renderTabs(activity: TabsActivity): string {
 
   .tabs-container {
     background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 20px;
+    border-radius: var(--radius-lg, 14px);
     border: 1px solid var(--card-border);
     overflow: hidden;
-    box-shadow: var(--card-shadow);
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
   }
 
   .tabs-header {
@@ -109,10 +107,10 @@ export function renderTabs(activity: TabsActivity): string {
   .tab-indicator {
     position: absolute;
     bottom: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--primary), #a855f7);
-    border-radius: 3px 3px 0 0;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 2px;
+    background: var(--primary);
+    border-radius: 2px 2px 0 0;
+    transition: all 0.25s ease;
   }
 
   .tabs-content {

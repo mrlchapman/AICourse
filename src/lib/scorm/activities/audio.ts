@@ -147,12 +147,10 @@ export function renderAudio(activity: AudioActivity): string {
 
   .audio-container {
     background: var(--card-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-radius: 20px;
+    border-radius: var(--radius-lg, 14px);
     border: 1px solid var(--card-border);
-    padding: 28px;
-    box-shadow: var(--card-shadow);
+    padding: 24px;
+    box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
   }
 
   .audio-title {
@@ -186,10 +184,10 @@ export function renderAudio(activity: AudioActivity): string {
   }
 
   .audio-play-btn {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), #a855f7);
+    background: var(--primary);
     border: none;
     color: white;
     font-size: 1.2rem;
@@ -197,19 +195,16 @@ export function renderAudio(activity: AudioActivity): string {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 20px var(--primary-glow);
+    transition: all 0.2s ease;
     flex-shrink: 0;
   }
 
   .audio-play-btn:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 25px var(--primary-glow);
+    opacity: 0.9;
   }
 
   .audio-play-btn:active {
-    transform: scale(0.98);
-    display: flex; /* Ensure it stays flex */
+    transform: scale(0.96);
   }
 
   .play-icon {
@@ -245,7 +240,7 @@ export function renderAudio(activity: AudioActivity): string {
 
   .audio-progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--primary), #a855f7);
+    background: var(--primary);
     border-radius: 4px;
     width: 0%;
     transition: width 0.1s linear;

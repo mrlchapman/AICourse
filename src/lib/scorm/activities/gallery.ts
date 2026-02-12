@@ -80,16 +80,16 @@ function getGalleryStyles(): string {
   return `<style>
 .gallery-activity { margin: 24px 0; }
 .gallery-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 20px; color: var(--text); }
-.carousel-container { background: var(--card-bg); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid var(--card-border); padding: 24px; box-shadow: var(--card-shadow); }
+.carousel-container { background: var(--card-bg); border-radius: var(--radius-lg, 14px); border: 1px solid var(--card-border); padding: 24px; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08)); }
 .carousel-main { position: relative; overflow: hidden; border-radius: 16px; }
 .carousel-slides { position: relative; height: 400px; background: var(--surface); border-radius: 16px; overflow: hidden; }
 .carousel-slide { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.5s ease; }
 .carousel-slide.active { opacity: 1; }
-.carousel-slide img { max-width: 100%; max-height: 350px; object-fit: contain; cursor: zoom-in; border-radius: 12px; margin: 0; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: transform 0.3s; }
+.carousel-slide img { max-width: 100%; max-height: 350px; object-fit: contain; cursor: zoom-in; border-radius: var(--radius-md, 10px); margin: 0; box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08)); transition: transform 0.3s; }
 .carousel-slide img:hover { transform: scale(1.02); }
 .carousel-caption { position: absolute; bottom: 0; left: 0; right: 0; padding: 16px 20px; background: linear-gradient(transparent, rgba(0,0,0,0.8)); color: white; text-align: center; font-size: 0.95rem; border-radius: 0 0 16px 16px; }
-.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; width: 48px; height: 48px; background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 50%; color: var(--text); font-size: 1.2rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
-.carousel-nav:hover { background: var(--primary); color: white; border-color: var(--primary); transform: translateY(-50%) scale(1.1); }
+.carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 10; width: 44px; height: 44px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 50%; color: var(--text); font-size: 1.2rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.carousel-nav:hover { background: var(--surface); border-color: var(--primary); color: var(--primary); transform: translateY(-50%); }
 .carousel-prev { left: 16px; } .carousel-next { right: 16px; }
 .carousel-counter { text-align: center; padding: 16px 0 8px; font-weight: 600; color: var(--text-muted); }
 .carousel-dots { display: flex; justify-content: center; gap: 8px; padding: 8px 0; }
