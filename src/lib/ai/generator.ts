@@ -250,7 +250,8 @@ function normalizeActivities(activities: any[]): any[] {
       if (activity.order === undefined) activity.order = index;
 
       // Knowledge checks
-      if (activity.type === 'knowledge_check' && activity.options) {
+      if (activity.type === 'knowledge_check') {
+        if (!activity.options) activity.options = [];
         activity.options.forEach((opt: any, i: number) => {
           if (!opt.id) opt.id = `opt-${index}-${i}`;
           opt.correct = opt.correct === true || opt.correct === 'true';
@@ -267,7 +268,8 @@ function normalizeActivities(activities: any[]): any[] {
       }
 
       // Quiz questions
-      if (activity.type === 'quiz' && activity.questions) {
+      if (activity.type === 'quiz') {
+        if (!activity.questions) activity.questions = [];
         activity.questions.forEach((q: any, qi: number) => {
           if (!q.id) q.id = `q-${Date.now()}-${qi}`;
           if (q.options) {
@@ -692,6 +694,17 @@ Return ONLY valid JSON for the single activity object with id, type, editorLabel
 // Response Parsers
 // ============================================
 
+function deduplicateSectionIds(sections: any[]): any[] {
+  const seen = new Set<string>();
+  return sections.map((section: any, index: number) => {
+    if (!section.id || seen.has(section.id)) {
+      section.id = `section-${Date.now()}-${index}`;
+    }
+    seen.add(section.id);
+    return section;
+  });
+}
+
 function parseCourseResponse(response: string, fallbackTitle: string): CourseContent {
   try {
     if (!response || response.length < 100) {
@@ -712,6 +725,7 @@ function parseCourseResponse(response: string, fallbackTitle: string): CourseCon
       section.activities = enforceQuizzesLast(section.activities);
     });
 
+    parsed.sections = deduplicateSectionIds(parsed.sections);
     parsed.sections = deduplicateGameTypes(parsed.sections);
 
     return parsed as CourseContent;
@@ -743,16 +757,24 @@ function parseOutlineResponse(response: string, fallbackTitle: string): CourseOu
   try {
     const parsed = safeParseJSON(response);
 
+    const seenIds = new Set<string>();
     return {
       title: parsed.title || fallbackTitle,
       description: parsed.description || '',
-      sections: (parsed.sections || []).map((s: any, i: number) => ({
-        id: s.id || `section-${i}`,
-        title: s.title || `Section ${i + 1}`,
-        topics: s.topics || [],
-        estimatedActivities: s.estimatedActivities || 5,
-        suggestedActivityTypes: s.suggestedActivityTypes || ['text_content', 'knowledge_check'],
-      })),
+      sections: (parsed.sections || []).map((s: any, i: number) => {
+        let id = s.id || `section-${i}`;
+        if (seenIds.has(id)) {
+          id = `section-${Date.now()}-${i}`;
+        }
+        seenIds.add(id);
+        return {
+          id,
+          title: s.title || `Section ${i + 1}`,
+          topics: s.topics || [],
+          estimatedActivities: s.estimatedActivities || 5,
+          suggestedActivityTypes: s.suggestedActivityTypes || ['text_content', 'knowledge_check'],
+        };
+      }),
       suggestedQuestions: (parsed.suggestedQuestions || []).map((q: any, i: number) => ({
         id: q.id || `outline-q-${i}`,
         question: q.question || '',

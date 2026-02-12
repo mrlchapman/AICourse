@@ -102,9 +102,9 @@ function ActivityPreview({ activity }: { activity: Activity }) {
             <p className="text-sm font-medium text-foreground">{activity.question}</p>
           </div>
           <div className="ml-7 space-y-1">
-            {activity.options.map((opt) => (
+            {(activity.options || []).map((opt, i) => (
               <div
-                key={opt.id}
+                key={opt.id || `opt-${i}`}
                 className={cn(
                   'text-xs px-3 py-1.5 rounded-md border',
                   opt.correct
@@ -154,7 +154,7 @@ function ActivityPreview({ activity }: { activity: Activity }) {
             <span className="text-sm font-medium text-foreground">{activity.title}</span>
           </div>
           <p className="text-xs text-foreground-muted ml-7">
-            {activity.questions.length} questions &middot; {activity.passingScore}% to pass
+            {(activity.questions || []).length} questions &middot; {activity.passingScore}% to pass
             {activity.timeLimit > 0 && ` \u00b7 ${Math.floor(activity.timeLimit / 60)}m limit`}
           </p>
         </div>
@@ -179,13 +179,13 @@ function ActivityPreview({ activity }: { activity: Activity }) {
     case 'accordion':
       return (
         <div className="space-y-1">
-          {activity.sections.slice(0, 3).map((sec) => (
-            <div key={sec.id} className="flex items-center gap-2 px-3 py-2 bg-surface-hover rounded-md">
+          {(activity.sections || []).slice(0, 3).map((sec, i) => (
+            <div key={sec.id || `sec-${i}`} className="flex items-center gap-2 px-3 py-2 bg-surface-hover rounded-md">
               <ChevronDown className="h-3.5 w-3.5 text-foreground-subtle" />
               <span className="text-xs text-foreground">{sec.title}</span>
             </div>
           ))}
-          {activity.sections.length > 3 && (
+          {(activity.sections || []).length > 3 && (
             <p className="text-xs text-foreground-subtle text-center">
               +{activity.sections.length - 3} more
             </p>
@@ -197,9 +197,9 @@ function ActivityPreview({ activity }: { activity: Activity }) {
       return (
         <div>
           <div className="flex border-b border-border">
-            {activity.tabs.map((tab, i) => (
+            {(activity.tabs || []).map((tab, i) => (
               <div
-                key={tab.id}
+                key={tab.id || `tab-${i}`}
                 className={cn(
                   'px-3 py-1.5 text-xs',
                   i === 0
@@ -212,7 +212,7 @@ function ActivityPreview({ activity }: { activity: Activity }) {
             ))}
           </div>
           <p className="text-xs text-foreground-muted p-2 line-clamp-2">
-            {activity.tabs[0]?.content || 'Tab content'}
+            {(activity.tabs || [])[0]?.content || 'Tab content'}
           </p>
         </div>
       );
@@ -222,10 +222,10 @@ function ActivityPreview({ activity }: { activity: Activity }) {
         <div className="flex items-center gap-2">
           <div className="h-16 w-24 bg-primary-light rounded-md flex items-center justify-center">
             <span className="text-xs text-primary font-medium text-center px-1 line-clamp-2">
-              {activity.cards[0]?.front || 'Front'}
+              {(activity.cards || [])[0]?.front || 'Front'}
             </span>
           </div>
-          <span className="text-foreground-subtle text-xs">{activity.cards.length} cards</span>
+          <span className="text-foreground-subtle text-xs">{(activity.cards || []).length} cards</span>
         </div>
       );
 
@@ -263,14 +263,14 @@ function ActivityPreview({ activity }: { activity: Activity }) {
     case 'timeline':
       return (
         <div className="space-y-2 pl-4 border-l-2 border-primary/30">
-          {activity.events.slice(0, 3).map((evt) => (
-            <div key={evt.id} className="relative">
+          {(activity.events || []).slice(0, 3).map((evt, i) => (
+            <div key={evt.id || `evt-${i}`} className="relative">
               <div className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-primary" />
               <p className="text-xs font-medium text-foreground">{evt.title}</p>
               {evt.date && <p className="text-xs text-foreground-subtle">{evt.date}</p>}
             </div>
           ))}
-          {activity.events.length > 3 && (
+          {(activity.events || []).length > 3 && (
             <p className="text-xs text-foreground-subtle">+{activity.events.length - 3} more</p>
           )}
         </div>
@@ -279,12 +279,12 @@ function ActivityPreview({ activity }: { activity: Activity }) {
     case 'process':
       return (
         <div className="flex items-center gap-1 overflow-x-auto pb-1">
-          {activity.steps.map((step, i) => (
-            <div key={step.id} className="flex items-center gap-1 shrink-0">
+          {(activity.steps || []).map((step, i) => (
+            <div key={step.id || `step-${i}`} className="flex items-center gap-1 shrink-0">
               <div className="h-8 px-2 bg-primary-light text-primary rounded-md flex items-center text-xs font-medium">
                 {step.title}
               </div>
-              {i < activity.steps.length - 1 && (
+              {i < (activity.steps || []).length - 1 && (
                 <ArrowRight className="h-3 w-3 text-foreground-subtle shrink-0" />
               )}
             </div>
@@ -296,8 +296,8 @@ function ActivityPreview({ activity }: { activity: Activity }) {
       return (
         <div className="space-y-1">
           <p className="text-xs font-medium text-foreground">{activity.title}</p>
-          {activity.pairs.slice(0, 3).map((pair) => (
-            <div key={pair.id} className="flex items-center gap-2 text-xs">
+          {(activity.pairs || []).slice(0, 3).map((pair, i) => (
+            <div key={pair.id || `pair-${i}`} className="flex items-center gap-2 text-xs">
               <span className="px-2 py-1 bg-primary-light text-primary rounded">{pair.left}</span>
               <Link2 className="h-3 w-3 text-foreground-subtle" />
               <span className="px-2 py-1 bg-surface-hover rounded">{pair.right}</span>
@@ -310,8 +310,8 @@ function ActivityPreview({ activity }: { activity: Activity }) {
       return (
         <div className="space-y-1">
           <p className="text-xs font-medium text-foreground">{activity.title}</p>
-          {activity.items.slice(0, 3).map((item, i) => (
-            <div key={item.id} className="flex items-center gap-2 text-xs">
+          {(activity.items || []).slice(0, 3).map((item, i) => (
+            <div key={item.id || `item-${i}`} className="flex items-center gap-2 text-xs">
               <span className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-bold shrink-0">
                 {i + 1}
               </span>
