@@ -73,7 +73,6 @@ function ActivityPreview({ activity }: { activity: Activity }) {
         <div className="prose prose-sm max-w-none text-foreground">
           <div
             dangerouslySetInnerHTML={{ __html: activity.content || '<p class="text-foreground-subtle italic">Empty text block</p>' }}
-            className="line-clamp-4"
           />
         </div>
       );
@@ -172,7 +171,10 @@ function ActivityPreview({ activity }: { activity: Activity }) {
           )}
         >
           <p className="text-sm font-medium">{activity.title}</p>
-          <p className="text-xs mt-1 opacity-80 line-clamp-2">{activity.content}</p>
+          <div
+            className="prose prose-xs max-w-none mt-1 opacity-80 text-xs"
+            dangerouslySetInnerHTML={{ __html: activity.content || '' }}
+          />
         </div>
       );
 

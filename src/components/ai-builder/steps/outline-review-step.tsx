@@ -138,22 +138,32 @@ export function OutlineReviewStep({
                 {q.context && (
                   <p className="text-xs text-foreground-muted mb-3">{q.context}</p>
                 )}
-                <div className="flex flex-wrap gap-2">
-                  {(q.options || []).map((option, i) => (
-                    <button
-                      key={i}
-                      onClick={() => answerQuestion(q.id, option)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-                        currentAnswer === option
-                          ? 'bg-primary text-white'
-                          : 'bg-white border border-border text-foreground hover:border-primary hover:text-primary'
-                      )}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+                {q.options && q.options.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {q.options.map((option, i) => (
+                      <button
+                        key={i}
+                        onClick={() => answerQuestion(q.id, option)}
+                        className={cn(
+                          'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                          currentAnswer === option
+                            ? 'bg-primary text-white'
+                            : 'bg-white border border-border text-foreground hover:border-primary hover:text-primary'
+                        )}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <textarea
+                    value={currentAnswer || ''}
+                    onChange={(e) => answerQuestion(q.id, e.target.value)}
+                    placeholder="Type your answer..."
+                    rows={2}
+                    className="w-full text-sm px-3 py-2 border border-border rounded-lg bg-white focus:ring-1 focus:ring-primary focus:border-primary outline-none resize-none"
+                  />
+                )}
               </div>
             );
           })}

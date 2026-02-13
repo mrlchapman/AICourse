@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -81,6 +82,13 @@ export function TextContentEditor({ activity, onUpdate }: Props) {
       },
     },
   });
+
+  // Sync editor content when switching between activities of the same type
+  useEffect(() => {
+    if (editor && activity.content !== editor.getHTML()) {
+      editor.commands.setContent(activity.content || '');
+    }
+  }, [activity.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!editor) return null;
 

@@ -120,7 +120,7 @@ async function generateWithOpenAI(
       { role: 'user', content: prompt },
     ],
     temperature: 0.7,
-    max_tokens: 16384,
+    max_tokens: 65536,
     response_format: { type: 'json_object' },
   });
 
@@ -166,42 +166,51 @@ function cleanJsonResponse(response: string): string {
 }
 
 function repairTruncatedJSON(json: string): string {
-  let inString = false;
-  let escapeNext = false;
-  const stack: string[] = [];
+  // Strategy 1: Try closing brackets on the full string first (preserves most data)
+  const attempt1 = closeBrackets(json);
+  try { JSON.parse(attempt1); return attempt1; } catch { /* try next strategy */ }
 
-  for (let i = 0; i < json.length; i++) {
-    const char = json[i];
-    if (escapeNext) { escapeNext = false; continue; }
-    if (char === '\\' && inString) { escapeNext = true; continue; }
-    if (char === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (char === '{' || char === '[') stack.push(char === '{' ? '}' : ']');
-    else if (char === '}' || char === ']') {
-      if (stack.length > 0 && stack[stack.length - 1] === char) stack.pop();
-    }
-  }
+  // Strategy 2: Remove trailing incomplete key-value pair, then close
+  let trimmed = json.replace(/,\s*"[^"]*"\s*:\s*("([^"\\]|\\.)*)?$/, '');
+  trimmed = trimmed.replace(/,\s*$/, '');
+  const attempt2 = closeBrackets(trimmed);
+  try { JSON.parse(attempt2); return attempt2; } catch { /* try next strategy */ }
 
+  // Strategy 3: Cut at last complete object/array entry
   const lastCompleteActivity = json.lastIndexOf('},');
   const lastCompleteArray = json.lastIndexOf('],');
   const cutPoint = Math.max(lastCompleteActivity, lastCompleteArray);
 
   let repaired = json;
-  if (cutPoint > json.length * 0.5) {
+  if (cutPoint > json.length * 0.3) {
     repaired = json.substring(0, cutPoint + 1);
   }
 
-  // Remove trailing incomplete content
   repaired = repaired.replace(/,\s*$/, '');
   repaired = repaired.replace(/:\s*$/, ': null');
   repaired = repaired.replace(/"[^"]*$/, '""');
 
-  // Count unclosed brackets
+  return closeBrackets(repaired);
+}
+
+function closeBrackets(json: string): string {
+  let repaired = json;
+  // Close any unterminated strings
+  let inString = false;
+  let escapeNext = false;
+  for (let i = 0; i < repaired.length; i++) {
+    const char = repaired[i];
+    if (escapeNext) { escapeNext = false; continue; }
+    if (char === '\\' && inString) { escapeNext = true; continue; }
+    if (char === '"') { inString = !inString; continue; }
+  }
+  if (inString) repaired += '"';
+
+  // Count and close unclosed brackets
   inString = false;
   escapeNext = false;
   let braceCount = 0;
   let bracketCount = 0;
-
   for (let i = 0; i < repaired.length; i++) {
     const char = repaired[i];
     if (escapeNext) { escapeNext = false; continue; }
@@ -214,7 +223,6 @@ function repairTruncatedJSON(json: string): string {
     if (char === ']') bracketCount--;
   }
 
-  if (inString) repaired += '"';
   while (bracketCount > 0) { repaired += ']'; bracketCount--; }
   while (braceCount > 0) { repaired += '}'; braceCount--; }
 
@@ -251,13 +259,44 @@ function normalizeActivities(activities: any[]): any[] {
 
       // Knowledge checks
       if (activity.type === 'knowledge_check') {
+        // AI often returns "answers" or "choices" instead of "options"
+        if (!activity.options && activity.answers) {
+          activity.options = activity.answers;
+          delete activity.answers;
+        }
+        if (!activity.options && activity.choices) {
+          activity.options = activity.choices;
+          delete activity.choices;
+        }
+        // AI may nest question under "text" or "prompt"
+        if (!activity.question && activity.text) {
+          activity.question = activity.text;
+          delete activity.text;
+        }
+        if (!activity.question && activity.prompt) {
+          activity.question = activity.prompt;
+          delete activity.prompt;
+        }
         if (!activity.options) activity.options = [];
+        // AI may return options as strings instead of objects
+        activity.options = activity.options.map((opt: any, i: number) => {
+          if (typeof opt === 'string') {
+            return { id: `opt-${index}-${i}`, text: opt, correct: false };
+          }
+          // AI may use "label" or "value" or "answer" instead of "text"
+          if (!opt.text && (opt.label || opt.value || opt.answer)) {
+            opt.text = opt.label || opt.value || opt.answer;
+          }
+          return opt;
+        });
         activity.options.forEach((opt: any, i: number) => {
           if (!opt.id) opt.id = `opt-${index}-${i}`;
           opt.correct = opt.correct === true || opt.correct === 'true';
         });
+        // Handle correctIndex / correct_answer patterns
         if (!activity.options.some((opt: any) => opt.correct)) {
-          const idx = typeof activity.correctIndex === 'number' ? activity.correctIndex : 0;
+          const idx = typeof activity.correctIndex === 'number' ? activity.correctIndex
+            : typeof activity.correct_answer === 'number' ? activity.correct_answer : 0;
           if (activity.options[idx]) activity.options[idx].correct = true;
         }
         // Shuffle options
@@ -269,38 +308,97 @@ function normalizeActivities(activities: any[]): any[] {
 
       // Quiz questions
       if (activity.type === 'quiz') {
+        // AI may use "title" or "name" fields — ensure defaults
+        if (!activity.title) activity.title = activity.name || 'Quiz';
+        if (!activity.passingScore) activity.passingScore = 80;
         if (!activity.questions) activity.questions = [];
         activity.questions.forEach((q: any, qi: number) => {
           if (!q.id) q.id = `q-${Date.now()}-${qi}`;
-          if (q.options) {
-            q.options.forEach((opt: any, oi: number) => {
-              if (!opt.id) opt.id = `opt-${qi}-${oi}`;
-              opt.correct = opt.correct === true || opt.correct === 'true';
-            });
-            if (!q.options.some((opt: any) => opt.correct) && q.options.length > 0) {
-              const idx = typeof q.correctIndex === 'number' ? q.correctIndex : 0;
-              if (q.options[idx]) q.options[idx].correct = true;
+          // AI may use "question" instead of "text" for the question text
+          if (!q.text && q.question) {
+            q.text = q.question;
+            delete q.question;
+          }
+          if (!q.points) q.points = 10;
+          // AI often returns "answers" or "choices" instead of "options"
+          if (!q.options && q.answers) {
+            q.options = q.answers;
+            delete q.answers;
+          }
+          if (!q.options && q.choices) {
+            q.options = q.choices;
+            delete q.choices;
+          }
+          if (!q.options) q.options = [];
+          // AI may return options as strings instead of objects
+          q.options = q.options.map((opt: any, oi: number) => {
+            if (typeof opt === 'string') {
+              return { id: `opt-${qi}-${oi}`, text: opt, correct: false };
             }
+            if (!opt.text && (opt.label || opt.value || opt.answer)) {
+              opt.text = opt.label || opt.value || opt.answer;
+            }
+            return opt;
+          });
+          q.options.forEach((opt: any, oi: number) => {
+            if (!opt.id) opt.id = `opt-${qi}-${oi}`;
+            opt.correct = opt.correct === true || opt.correct === 'true';
+          });
+          if (!q.options.some((opt: any) => opt.correct) && q.options.length > 0) {
+            const idx = typeof q.correctIndex === 'number' ? q.correctIndex
+              : typeof q.correct_answer === 'number' ? q.correct_answer : 0;
+            if (q.options[idx]) q.options[idx].correct = true;
           }
         });
       }
 
       // Flashcards
-      if (activity.type === 'flashcard' && activity.cards) {
+      if (activity.type === 'flashcard') {
+        // AI may return "items" or "flashcards" instead of "cards"
+        if (!activity.cards && activity.items) {
+          activity.cards = activity.items;
+          delete activity.items;
+        }
+        if (!activity.cards && activity.flashcards) {
+          activity.cards = activity.flashcards;
+          delete activity.flashcards;
+        }
+        if (!activity.cards) activity.cards = [];
+        // Normalize card fields: AI may use "question"/"term" for front, "answer"/"definition" for back
+        activity.cards = activity.cards.map((card: any, ci: number) => {
+          if (!card.front && (card.question || card.term || card.word)) {
+            card.front = card.question || card.term || card.word;
+          }
+          if (!card.back && (card.answer || card.definition || card.meaning)) {
+            card.back = card.answer || card.definition || card.meaning;
+          }
+          if (!card.id) card.id = `card-${ci}`;
+          return card;
+        });
         activity.cards = activity.cards.filter((card: any) => {
           const hasFront = card.front?.trim() || card.frontImageQuery?.trim();
           const hasBack = card.back?.trim() || card.backImageQuery?.trim();
           return hasFront && hasBack;
         });
-        activity.cards.forEach((card: any, ci: number) => {
-          if (!card.id) card.id = `card-${ci}`;
-        });
       }
 
       // Accordions
-      if (activity.type === 'accordion' && activity.sections) {
+      if (activity.type === 'accordion') {
+        // AI may return "items" or "panels" instead of "sections"
+        if (!activity.sections && activity.items) {
+          activity.sections = activity.items;
+          delete activity.items;
+        }
+        if (!activity.sections && activity.panels) {
+          activity.sections = activity.panels;
+          delete activity.panels;
+        }
+        if (!activity.sections) activity.sections = [];
         activity.sections.forEach((s: any, si: number) => {
           if (!s.id) s.id = `acc-sect-${si}`;
+          // AI may use "heading"/"label" instead of "title", "body"/"text" instead of "content"
+          if (!s.title && (s.heading || s.label)) s.title = s.heading || s.label;
+          if (!s.content && (s.body || s.text)) s.content = s.body || s.text;
         });
       }
 
@@ -317,10 +415,23 @@ function normalizeGamificationActivity(activity: any): void {
   const gameType = activity.gameType || 'memory_match';
   if (!activity.config) activity.config = {};
 
+  // AI sometimes puts game data at the activity root instead of inside config
+  if (gameType === 'memory_match' && !activity.config.pairs && activity.pairs) {
+    activity.config.pairs = activity.pairs;
+    delete activity.pairs;
+  }
+
   if (gameType === 'memory_match' && activity.config.pairs) {
     // Fix pairs where AI returned strings instead of {type, content} objects
     activity.config.pairs = activity.config.pairs.map((pair: any, i: number) => {
       if (!pair.id) pair.id = `p${i + 1}`;
+      // AI may use "term"/"definition" or "left"/"right" or "word"/"meaning"
+      if (!pair.item1 && (pair.term || pair.left || pair.word)) {
+        pair.item1 = { type: 'text', content: pair.term || pair.left || pair.word };
+      }
+      if (!pair.item2 && (pair.definition || pair.right || pair.meaning || pair.match)) {
+        pair.item2 = { type: 'text', content: pair.definition || pair.right || pair.meaning || pair.match };
+      }
       if (typeof pair.item1 === 'string') pair.item1 = { type: 'text', content: pair.item1 };
       if (typeof pair.item2 === 'string') pair.item2 = { type: 'text', content: pair.item2 };
       if (pair.item1 && !pair.item1.type) pair.item1.type = 'text';
@@ -334,11 +445,55 @@ function normalizeGamificationActivity(activity: any): void {
     });
   }
 
-  // Neon defender - truncate long answers
-  if (gameType === 'neon_defender' && activity.config.questions) {
-    activity.config.questions.forEach((q: any, i: number) => {
-      if (!q.id) q.id = `nd-q${i + 1}`;
-      if (q.answers && Array.isArray(q.answers)) {
+  // Question-based games with correctIndex
+  const questionKeyMap: Record<string, string> = {
+    battleships: 'battleshipsQuestions',
+    millionaire: 'millionaireQuestions',
+    the_chase: 'chaseQuestions',
+    quiz_uno: 'unoQuestions',
+    word_search: 'wordSearchWords',
+    knowledge_tetris: 'questions',
+    neon_defender: 'questions',
+  };
+
+  const qKey = questionKeyMap[gameType];
+
+  // AI sometimes puts questions at the activity root instead of inside config
+  if (qKey && !activity.config[qKey] && !activity.config.questions && activity.questions) {
+    activity.config.questions = activity.questions;
+    delete activity.questions;
+  }
+
+  // If AI returned questions under wrong key, remap to the correct one
+  if (qKey && !activity.config[qKey] && activity.config.questions && qKey !== 'questions') {
+    activity.config[qKey] = activity.config.questions;
+    delete activity.config.questions;
+  }
+
+  // Normalize all question-based games: ensure answers exist and are well-formed
+  if (qKey && activity.config[qKey]) {
+    activity.config[qKey].forEach((q: any, i: number) => {
+      if (!q.id) q.id = `${gameType.substring(0, 3)}-q${i + 1}`;
+
+      // For neon_defender: answers are [{text, correct}]
+      if (gameType === 'neon_defender') {
+        // AI may use "options" or "choices" instead of "answers"
+        if (!q.answers && q.options) { q.answers = q.options; delete q.options; }
+        if (!q.answers && q.choices) { q.answers = q.choices; delete q.choices; }
+        if (!q.answers) q.answers = [];
+        // Normalize: AI may return strings instead of objects
+        q.answers = q.answers.map((a: any) => {
+          if (typeof a === 'string') return { text: a, correct: false };
+          if (!a.text && (a.label || a.value || a.answer)) a.text = a.label || a.value || a.answer;
+          a.correct = a.correct === true || a.correct === 'true';
+          return a;
+        });
+        // If no answer is marked correct and correctIndex exists, set it
+        if (!q.answers.some((a: any) => a.correct) && q.answers.length > 0) {
+          const idx = typeof q.correctIndex === 'number' ? q.correctIndex : 0;
+          if (q.answers[idx]) q.answers[idx].correct = true;
+        }
+        // Truncate long answer text for neon_defender display
         q.answers = q.answers.map((a: any) => {
           if (typeof a === 'object' && a.text && a.text.length > 12) {
             const text = a.text.trim();
@@ -349,50 +504,50 @@ function normalizeGamificationActivity(activity: any): void {
           }
           return a;
         });
+      } else {
+        // For correctIndex-based games (battleships, millionaire, the_chase, etc.)
+        // AI may use "options" or "choices" instead of "answers"
+        if (!q.answers && q.options) { q.answers = q.options; delete q.options; }
+        if (!q.answers && q.choices) { q.answers = q.choices; delete q.choices; }
+        // Normalize answers to string array
+        if (q.answers && Array.isArray(q.answers)) {
+          q.answers = q.answers.map((a: any) => (typeof a === 'object' ? (a.text || a.label || a.value || '') : String(a)));
+        }
+        if (q.correctIndex !== undefined) q.correctIndex = Number(q.correctIndex) || 0;
       }
     });
-  }
 
-  // Question-based games with correctIndex
-  const questionKeyMap: Record<string, string> = {
-    battleships: 'battleshipsQuestions',
-    millionaire: 'millionaireQuestions',
-    the_chase: 'chaseQuestions',
-    quiz_uno: 'unoQuestions',
-    word_search: 'wordSearchWords',
-    knowledge_tetris: 'questions',
-  };
-
-  const qKey = questionKeyMap[gameType];
-  // If AI returned questions under wrong key, remap to the correct one
-  if (qKey && !activity.config[qKey] && activity.config.questions && qKey !== 'questions') {
-    activity.config[qKey] = activity.config.questions;
-    delete activity.config.questions;
-  }
-  if (qKey && activity.config[qKey]) {
-    activity.config[qKey].forEach((q: any, i: number) => {
-      if (!q.id) q.id = `${gameType.substring(0, 3)}-q${i + 1}`;
-      if (q.correctIndex !== undefined) q.correctIndex = Number(q.correctIndex) || 0;
+    // Filter out questions that have no answers at all
+    activity.config[qKey] = activity.config[qKey].filter((q: any) => {
+      if (gameType === 'neon_defender') return q.answers && q.answers.length >= 2;
+      if (gameType === 'word_search') return q.word?.trim();
+      return q.answers && q.answers.length >= 2;
     });
   }
 }
 
 function filterMinimumRequirements(activities: any[]): any[] {
   return activities.filter((activity: any) => {
-    if (activity.type === 'flashcard' && (!activity.cards || activity.cards.length < 4)) return false;
-    if (activity.type === 'accordion' && (!activity.sections || activity.sections.length < 3)) return false;
-    if (activity.type === 'quiz' && (!activity.questions || activity.questions.length < 4)) return false;
+    // Remove knowledge checks with no question or no options
+    if (activity.type === 'knowledge_check') {
+      if (!activity.question?.trim()) return false;
+      if (!activity.options || activity.options.length < 2) return false;
+    }
+    // Require at least 2 questions (not 4) — partial content is better than nothing
+    if (activity.type === 'flashcard' && (!activity.cards || activity.cards.length < 2)) return false;
+    if (activity.type === 'accordion' && (!activity.sections || activity.sections.length < 2)) return false;
+    if (activity.type === 'quiz' && (!activity.questions || activity.questions.length < 2)) return false;
     if (activity.type === 'gamification') {
       const gt = activity.gameType || 'memory_match';
       const cfg = activity.config || {};
-      if (gt === 'memory_match' && (!cfg.pairs || cfg.pairs.length < 4)) return false;
-      if (gt === 'neon_defender' && (!cfg.questions || cfg.questions.length < 4)) return false;
-      if (gt === 'battleships' && (!cfg.battleshipsQuestions || cfg.battleshipsQuestions.length < 4)) return false;
-      if (gt === 'millionaire' && (!cfg.millionaireQuestions || cfg.millionaireQuestions.length < 4)) return false;
-      if (gt === 'the_chase' && (!cfg.chaseQuestions || cfg.chaseQuestions.length < 4)) return false;
-      if (gt === 'word_search' && (!cfg.wordSearchWords || cfg.wordSearchWords.length < 4)) return false;
-      if (gt === 'quiz_uno' && (!cfg.unoQuestions || cfg.unoQuestions.length < 4)) return false;
-      if (gt === 'knowledge_tetris' && (!cfg.questions || cfg.questions.length < 4)) return false;
+      if (gt === 'memory_match' && (!cfg.pairs || cfg.pairs.length < 2)) return false;
+      if (gt === 'neon_defender' && (!cfg.questions || cfg.questions.length < 2)) return false;
+      if (gt === 'battleships' && (!cfg.battleshipsQuestions || cfg.battleshipsQuestions.length < 2)) return false;
+      if (gt === 'millionaire' && (!cfg.millionaireQuestions || cfg.millionaireQuestions.length < 2)) return false;
+      if (gt === 'the_chase' && (!cfg.chaseQuestions || cfg.chaseQuestions.length < 2)) return false;
+      if (gt === 'word_search' && (!cfg.wordSearchWords || cfg.wordSearchWords.length < 2)) return false;
+      if (gt === 'quiz_uno' && (!cfg.unoQuestions || cfg.unoQuestions.length < 2)) return false;
+      if (gt === 'knowledge_tetris' && (!cfg.questions || cfg.questions.length < 2)) return false;
     }
     return true;
   });
@@ -516,11 +671,15 @@ OUTPUT FORMAT:
       "order": 0,
       "activities": [
         {"id": "act-0", "type": "text_content", "order": 0, "editorLabel": "Label", "content": "<h2>Title</h2><p>Content</p>"},
-        {"id": "act-1", "type": "image", "order": 1, "editorLabel": "Image", "imageQuery": "terms", "geminiPrompt": "detailed prompt", "alt": "Description"}
+        {"id": "act-1", "type": "knowledge_check", "order": 1, "editorLabel": "Check", "question": "What is X?", "options": [{"id": "o1", "text": "Answer A", "correct": false}, {"id": "o2", "text": "Answer B", "correct": true}, {"id": "o3", "text": "Answer C", "correct": false}, {"id": "o4", "text": "Answer D", "correct": false}], "explanation": "B is correct because..."},
+        {"id": "act-2", "type": "image", "order": 2, "editorLabel": "Image", "imageQuery": "terms", "geminiPrompt": "detailed prompt", "alt": "Description"},
+        {"id": "act-3", "type": "quiz", "order": 3, "editorLabel": "Quiz", "title": "Section Quiz", "description": "Test your knowledge", "timeLimit": 300, "passingScore": 80, "questions": [{"id": "q1", "text": "Question?", "points": 10, "options": [{"id": "o1", "text": "A", "correct": false}, {"id": "o2", "text": "B", "correct": true}, {"id": "o3", "text": "C", "correct": false}, {"id": "o4", "text": "D", "correct": false}], "feedback": "Explanation"}]}
       ]
     }
   ]
 }
+
+CRITICAL: For knowledge_check, use "question" and "options" fields (NOT "answers" or "choices"). For quiz, use "questions" array where each has "text" and "options" (NOT "answers").
 
 Return valid JSON only. NEVER repeat a gameType.`;
 }
@@ -644,6 +803,11 @@ GAMIFICATION FORMATS (each gameType only ONCE per course):
 - battleships: config.battleshipsQuestions [{id, question, explanation, answers, correctIndex}] (6+ questions)
 - millionaire: config.millionaireQuestions [{id, question, explanation, hint, answers, correctIndex}] (8+ questions)
 - the_chase: config.chaseQuestions [{id, question, explanation, answers, correctIndex}] (6+ questions)
+
+ACTIVITY FIELD NAMES (use EXACTLY these):
+- knowledge_check: "question" (string), "options" (array of {id, text, correct}), "explanation" (string)
+- quiz: "title", "description", "timeLimit", "passingScore", "questions" (array of {id, text, points, options: [{id, text, correct}], feedback})
+- Do NOT use "answers" or "choices" — always use "options"
 
 OUTPUT FORMAT (JSON):
 {

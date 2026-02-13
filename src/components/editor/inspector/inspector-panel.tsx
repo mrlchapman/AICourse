@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Trash2, Sparkles, Copy, Loader2 } from 'lucide-react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { X, Trash2, Sparkles, Copy, Loader2, PanelRightClose, PanelRightOpen, Maximize2 } from 'lucide-react';
 import { Button, Input, Textarea } from '@/components/ui';
 import { getActivityDisplayInfo, ACTIVITY_CONFIG, type Activity, type CourseContent } from '@/types/activities';
 import { TextContentEditor } from './editors/text-content-editor';
@@ -67,11 +67,48 @@ const AI_GENERATABLE_TYPES = [
   'discussion',
 ];
 
+const MIN_WIDTH = 288;
+const DEFAULT_WIDTH = 320;
+const MAX_WIDTH = 640;
+
 export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, onDelete, onClose }: InspectorPanelProps) {
   const { icon, label } = getActivityDisplayInfo(activity);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [aiTopic, setAiTopic] = useState('');
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_WIDTH);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const startWidth = useRef(DEFAULT_WIDTH);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    isDragging.current = true;
+    startX.current = e.clientX;
+    startWidth.current = panelWidth;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }, [panelWidth]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+      const delta = startX.current - e.clientX;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, startWidth.current + delta));
+      setPanelWidth(newWidth);
+    };
+    const handleMouseUp = () => {
+      if (!isDragging.current) return;
+      isDragging.current = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
 
   const canGenerate = AI_GENERATABLE_TYPES.includes(activity.type);
 
@@ -128,19 +165,43 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
   };
 
   return (
-    <div className="w-72 border-l border-border bg-surface overflow-y-auto shrink-0 flex flex-col">
+    <div
+      className="border-l border-border bg-surface overflow-y-auto shrink-0 flex flex-col relative"
+      style={{ width: panelWidth }}
+    >
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize hover:bg-primary/20 active:bg-primary/30 transition-colors z-10"
+      />
       {/* Header */}
       <div className="p-3 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm">{icon}</span>
           <span className="text-sm font-semibold text-foreground truncate">{label}</span>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1 rounded-md text-foreground-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-0.5">
+          <button
+            onClick={() => setPanelWidth(MIN_WIDTH)}
+            title="Narrow"
+            className={`p-1 rounded-md transition-colors ${panelWidth <= MIN_WIDTH ? 'text-primary bg-primary/10' : 'text-foreground-muted hover:text-foreground hover:bg-surface-hover'}`}
+          >
+            <PanelRightClose className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={() => setPanelWidth(MAX_WIDTH)}
+            title="Wide"
+            className={`p-1 rounded-md transition-colors ${panelWidth >= MAX_WIDTH ? 'text-primary bg-primary/10' : 'text-foreground-muted hover:text-foreground hover:bg-surface-hover'}`}
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-md text-foreground-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Custom Label */}
