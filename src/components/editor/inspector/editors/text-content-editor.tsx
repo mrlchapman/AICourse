@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -60,6 +60,9 @@ function ToolbarButton({
 }
 
 export function TextContentEditor({ activity, onUpdate }: Props) {
+  // Force re-render on selection/transaction changes so toolbar active states update
+  const [, setTick] = useState(0);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -75,6 +78,9 @@ export function TextContentEditor({ activity, onUpdate }: Props) {
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onUpdate({ content: editor.getHTML() });
+    },
+    onSelectionUpdate: () => {
+      setTick((t) => t + 1);
     },
     editorProps: {
       attributes: {

@@ -36,7 +36,9 @@ const DEFAULT_CONTENT: CourseContent = {
 
 export function EditorShell({ courseId, initialContent }: EditorShellProps) {
   const [content, setContent] = useState<CourseContent>(initialContent || DEFAULT_CONTENT);
-  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
+    initialContent?.sections?.[0]?.id ?? null
+  );
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);

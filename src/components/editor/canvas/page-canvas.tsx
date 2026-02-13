@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ActivityBlock } from './activity-block';
@@ -23,6 +24,17 @@ export function PageCanvas({
   onReorderActivities,
   onAddSection,
 }: PageCanvasProps) {
+  const activityRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // Scroll selected activity into view when selection changes (e.g. from outline click)
+  useEffect(() => {
+    if (selectedActivityId && activityRefs.current[selectedActivityId]) {
+      activityRefs.current[selectedActivityId]?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, [selectedActivityId]);
   if (!section) {
     return (
       <div className="flex-1 overflow-y-auto bg-background-secondary">
@@ -73,11 +85,13 @@ export function PageCanvas({
                 />
               )}
 
-              <ActivityBlock
-                activity={activity}
-                isSelected={activity.id === selectedActivityId}
-                onClick={() => onSelectActivity(activity.id)}
-              />
+              <div ref={(el) => { activityRefs.current[activity.id] = el; }}>
+                <ActivityBlock
+                  activity={activity}
+                  isSelected={activity.id === selectedActivityId}
+                  onClick={() => onSelectActivity(activity.id)}
+                />
+              </div>
 
               <InsertMenu
                 onInsert={(a) => onAddActivity(a, index + 1)}
