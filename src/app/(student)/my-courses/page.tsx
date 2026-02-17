@@ -57,7 +57,7 @@ export default async function MyCoursesPage() {
             const isCompleted = enrollment.status === 'completed' || enrollment.status === 'passed';
 
             return (
-              <Card key={enrollment.id} className="overflow-hidden hover:shadow-md transition-shadow">
+              <Card key={enrollment.id} className="overflow-hidden hover:shadow-md transition-shadow" aria-label={`Course: ${course.title}`}>
                 {/* Header gradient */}
                 <div className="h-32 bg-gradient-to-br from-primary/80 to-primary/40 p-5 flex items-end relative">
                   <h3 className="text-lg font-bold text-white relative z-10 line-clamp-2">
@@ -76,7 +76,7 @@ export default async function MyCoursesPage() {
                           : 'Not started'}
                       </span>
                     </div>
-                    <Badge variant={isCompleted ? 'success' : 'warning'}>
+                    <Badge variant={isCompleted ? 'success' : 'warning'} aria-label={`Status: ${isCompleted ? 'Completed' : enrollment.status === 'in_progress' ? 'In Progress' : 'Enrolled'}`}>
                       {isCompleted ? 'Completed' : enrollment.status === 'in_progress' ? 'In Progress' : 'Enrolled'}
                     </Badge>
                   </div>
@@ -89,7 +89,14 @@ export default async function MyCoursesPage() {
                         {isCompleted ? 100 : percent}%
                       </span>
                     </div>
-                    <div className="h-2 bg-surface-hover rounded-full overflow-hidden">
+                    <div
+                      className="h-2 bg-surface-hover rounded-full overflow-hidden"
+                      role="progressbar"
+                      aria-valuenow={isCompleted ? 100 : percent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`Course progress: ${isCompleted ? 100 : percent}%`}
+                    >
                       <div
                         className="h-full bg-primary rounded-full transition-all duration-500"
                         style={{ width: `${isCompleted ? 100 : percent}%` }}

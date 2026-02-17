@@ -52,24 +52,27 @@ function JoinPageContent() {
 
         <div className="bg-surface rounded-xl border border-border shadow-sm p-6">
           {success ? (
-            <div className="text-center py-4">
+            <div className="text-center py-4" role="alert" aria-live="polite">
               <CheckCircle2 className="h-12 w-12 text-green-600 mx-auto mb-3" />
               <h2 className="text-lg font-semibold text-foreground mb-1">Enrolled Successfully!</h2>
               <p className="text-sm text-foreground-muted">Redirecting to your course...</p>
             </div>
           ) : (
             <>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4" aria-label="Join course with invite code">
                 <Input
                   placeholder="ENTER CODE"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
                   className="text-center text-2xl tracking-widest font-mono uppercase"
                   maxLength={12}
+                  aria-label="Invite code"
+                  aria-describedby={error ? 'join-error' : undefined}
+                  aria-invalid={!!error}
                 />
 
                 {error && (
-                  <div className="p-3 bg-danger-light border border-danger/20 rounded-lg text-danger text-sm text-center">
+                  <div id="join-error" className="p-3 bg-danger-light border border-danger/20 rounded-lg text-danger text-sm text-center" role="alert">
                     {error}
                   </div>
                 )}

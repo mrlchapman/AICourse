@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { revalidatePath } from 'next/cache';
 import { nanoid } from 'nanoid';
 
 /**
@@ -12,8 +13,9 @@ export async function publishCourse(courseId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const { error } = await supabase
-    .from('courses')
+  const admin = getSupabaseAdmin();
+  const { error } = await (admin
+    .from('courses') as any)
     .update({
       is_hosted: true,
       status: 'published',
@@ -22,6 +24,8 @@ export async function publishCourse(courseId: string) {
     .eq('id', courseId);
 
   if (error) return { error: error.message };
+  revalidatePath('/');
+  revalidatePath('/courses');
   return { success: true };
 }
 
@@ -33,8 +37,9 @@ export async function unpublishCourse(courseId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const { error } = await supabase
-    .from('courses')
+  const admin = getSupabaseAdmin();
+  const { error } = await (admin
+    .from('courses') as any)
     .update({
       is_hosted: false,
       status: 'draft',
@@ -42,6 +47,8 @@ export async function unpublishCourse(courseId: string) {
     .eq('id', courseId);
 
   if (error) return { error: error.message };
+  revalidatePath('/');
+  revalidatePath('/courses');
   return { success: true };
 }
 
@@ -186,17 +193,17 @@ export async function getTeacherStats() {
   if (!profile) return { error: 'Profile not found' };
 
   // Get all courses by this teacher
-  const { data: courses } = await supabase
-    .from('courses')
+  const { data: courses } = await (admin
+    .from('courses') as any)
     .select('id, title, is_hosted, status, created_at')
-    .eq('created_by', profile.id)
+    .eq('user_id', profile.id)
     .order('created_at', { ascending: false });
 
   if (!courses || courses.length === 0) {
     return { courses: [], totalStudents: 0, totalCompleted: 0, avgScore: 0 };
   }
 
-  const courseIds = courses.map(c => c.id);
+  const courseIds = courses.map((c: any) => c.id);
 
   // Get all enrollments across teacher's courses
   const { data: enrollments } = await (admin
@@ -218,7 +225,7 @@ export async function getTeacherStats() {
     : 0;
 
   // Per-course stats
-  const courseStats = courses.map(course => {
+  const courseStats = courses.map((course: any) => {
     const courseEnrollments = allEnrollments.filter((e: any) => e.course_id === course.id);
     const courseCompleted = courseEnrollments.filter((e: any) =>
       e.status === 'completed' || e.status === 'passed'
@@ -264,8 +271,9 @@ export async function updateCourseDeadlines(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const { error } = await supabase
-    .from('courses')
+  const admin = getSupabaseAdmin();
+  const { error } = await (admin
+    .from('courses') as any)
     .update({
       has_deadline: settings.has_deadline,
       course_deadline: settings.course_deadline || null,

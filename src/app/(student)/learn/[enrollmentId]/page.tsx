@@ -13,7 +13,7 @@ export default async function LearnPage({ params }: LearnPageProps) {
 
   if (result.error || !result.course) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <main className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-foreground">Unable to load course</h1>
           <p className="text-foreground-muted mb-6">
@@ -22,11 +22,12 @@ export default async function LearnPage({ params }: LearnPageProps) {
           <Link
             href="/my-courses"
             className="inline-flex items-center px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
+            aria-label="Back to my courses"
           >
             Back to My Courses
           </Link>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -35,9 +36,9 @@ export default async function LearnPage({ params }: LearnPageProps) {
 
   if (!isHosted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <main className="min-h-screen flex items-center justify-center bg-background p-4">
         <div className="text-center max-w-md bg-surface border border-border p-8 rounded-2xl shadow-sm">
-          <div className="text-5xl mb-6">🏁</div>
+          <div className="text-5xl mb-6" aria-hidden="true">🏁</div>
           <h1 className="text-2xl font-bold mb-2 text-foreground">Course Ended</h1>
           <p className="text-foreground-muted mb-6">
             &ldquo;{result.course.title}&rdquo; is no longer active.
@@ -60,20 +61,21 @@ export default async function LearnPage({ params }: LearnPageProps) {
           <Link
             href="/my-courses"
             className="block w-full py-3 bg-surface-hover hover:bg-border rounded-lg font-medium transition-colors text-foreground text-center"
+            aria-label="Back to my courses"
           >
             Back to My Courses
           </Link>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <main className="h-screen flex flex-col">
       <CoursePlayer
         enrollment={result.enrollment}
         courseContent={courseContent}
       />
-    </div>
+    </main>
   );
 }

@@ -329,15 +329,38 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
     }
   };
 
+  // Keyboard shortcuts for fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullScreen) {
+        // Browser handles Escape for fullscreen, but sync state
+        setIsFullScreen(false);
+      }
+      if (e.key === 'f' && !e.metaKey && !e.ctrlKey && !e.altKey && document.activeElement === document.body) {
+        e.preventDefault();
+        toggleFullScreen();
+      }
+    };
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isFullScreen]);
+
   if (generationError) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-background p-6">
-        <div className="text-4xl mb-4">⚠️</div>
+      <div className="flex flex-col h-screen items-center justify-center bg-background p-6" role="main">
+        <div className="text-4xl mb-4" aria-hidden="true">⚠️</div>
         <h2 className="text-xl font-bold mb-2 text-foreground">Technical Difficulty</h2>
-        <p className="text-foreground-muted mb-6">{generationError}</p>
+        <p className="text-foreground-muted mb-6" role="alert" aria-live="polite">{generationError}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-6 py-2 bg-surface hover:bg-surface-hover rounded-lg transition-colors border border-border text-foreground"
+          className="px-6 py-2 bg-surface hover:bg-surface-hover rounded-lg transition-colors border border-border text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
         >
           Retry Loading
         </button>
@@ -349,9 +372,9 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
 
   if (!displayHtml) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-background">
-        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" />
-        <p className="text-foreground-muted animate-pulse">Initializing course player...</p>
+      <div className="flex flex-col h-screen items-center justify-center bg-background" role="main">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4" aria-hidden="true" />
+        <p className="text-foreground-muted animate-pulse" aria-live="polite">Initializing course player...</p>
       </div>
     );
   }
@@ -360,10 +383,11 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
     <div ref={containerRef} className="flex flex-col h-screen bg-background">
       {/* Minimal Header */}
       {!isFullScreen && (
-        <div className="h-12 bg-surface border-b border-border flex items-center justify-between px-4 shrink-0">
+        <nav className="h-12 bg-surface border-b border-border flex items-center justify-between px-4 shrink-0" aria-label="Course player navigation">
           <Link
             href="/my-courses"
-            className="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors text-sm font-medium"
+            className="flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-lg px-2 py-1"
+            aria-label="Back to my courses"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to My Courses
@@ -375,20 +399,20 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
 
           <button
             onClick={toggleFullScreen}
-            className="p-2 text-foreground-muted hover:text-foreground hover:bg-surface-hover rounded-lg transition-colors"
-            title="Toggle Fullscreen"
+            className="p-2 text-foreground-muted hover:text-foreground hover:bg-surface-hover rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+            aria-label={isFullScreen ? 'Exit fullscreen' : 'Enter fullscreen'}
           >
             <Maximize2 className="h-4 w-4" />
           </button>
-        </div>
+        </nav>
       )}
 
       {/* Iframe */}
-      <div className="flex-1 w-full bg-white relative">
+      <div className="flex-1 w-full bg-white relative" role="main">
         <iframe
           srcDoc={displayHtml}
           className="absolute inset-0 w-full h-full border-0"
-          title="Course Content"
+          title={`Course Content: ${courseContent.title || 'Course'}`}
           sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups allow-top-navigation"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
@@ -399,7 +423,8 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
       {isFullScreen && (
         <button
           onClick={toggleFullScreen}
-          className="fixed top-4 right-4 z-50 p-3 bg-black/60 hover:bg-black/80 text-white rounded-full shadow-lg backdrop-blur-sm transition-all"
+          className="fixed top-4 right-4 z-50 p-3 bg-black/60 hover:bg-black/80 text-white rounded-full shadow-lg backdrop-blur-sm transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          aria-label="Exit fullscreen"
         >
           <Minimize2 className="h-5 w-5" />
         </button>

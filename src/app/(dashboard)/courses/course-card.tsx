@@ -3,9 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trash2, Globe, Clock, MoreVertical, Copy } from 'lucide-react';
+import { Trash2, Globe, Clock, MoreVertical, Copy, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui';
 import { deleteCourse, duplicateCourse } from '@/app/actions/courses';
+import { publishCourse, unpublishCourse } from '@/app/actions/teacher';
 
 interface CourseCardProps {
   course: {
@@ -25,6 +26,9 @@ export function CourseCard({ course }: CourseCardProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [toggling, setToggling] = useState(false);
+  const [isHosted, setIsHosted] = useState(course.is_hosted);
+  const [status, setStatus] = useState(course.status);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -42,6 +46,20 @@ export function CourseCard({ course }: CourseCardProps) {
     router.refresh();
   };
 
+  const handleToggleHost = async () => {
+    setToggling(true);
+    const result = isHosted
+      ? await unpublishCourse(course.id)
+      : await publishCourse(course.id);
+    if (result.success) {
+      setIsHosted(!isHosted);
+      setStatus(isHosted ? 'draft' : 'published');
+    }
+    setShowMenu(false);
+    setToggling(false);
+    router.refresh();
+  };
+
   return (
     <div className="relative group">
       <Link href={`/courses/${course.id}/edit`}>
@@ -52,17 +70,17 @@ export function CourseCard({ course }: CourseCardProps) {
                 {course.title || 'Untitled Course'}
               </h3>
               <div className="flex items-center gap-1 shrink-0 ml-2">
-                {course.is_hosted && (
+                {isHosted && (
                   <span className="p-1 text-green-600" title="Published">
                     <Globe className="h-3.5 w-3.5" />
                   </span>
                 )}
                 <span className={`px-1.5 py-0.5 text-[10px] font-medium rounded ${
-                  course.status === 'published'
+                  status === 'published'
                     ? 'bg-green-100 text-green-700'
                     : 'bg-amber-100 text-amber-700'
                 }`}>
-                  {course.status || 'draft'}
+                  {status || 'draft'}
                 </span>
               </div>
             </div>
@@ -123,6 +141,22 @@ export function CourseCard({ course }: CourseCardProps) {
               </div>
             ) : (
               <>
+                <button
+                  onClick={handleToggleHost}
+                  disabled={toggling}
+                  className={`w-full flex items-center gap-2 px-3 py-2 text-xs transition-colors disabled:opacity-50 ${
+                    isHosted
+                      ? 'text-foreground hover:bg-surface-hover'
+                      : 'text-green-700 hover:bg-green-50'
+                  }`}
+                >
+                  {toggling ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Globe className="h-3.5 w-3.5" />
+                  )}
+                  {toggling ? (isHosted ? 'Unpublishing...' : 'Publishing...') : isHosted ? 'Unpublish' : 'Publish'}
+                </button>
                 <button
                   onClick={handleDuplicate}
                   disabled={duplicating}

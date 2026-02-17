@@ -13,6 +13,7 @@ import {
   PanelLeft,
   Undo2,
   Redo2,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { nanoid } from 'nanoid';
@@ -323,6 +324,14 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
           >
             <Save className="h-4 w-4" />
           </Button>
+
+          <div className="h-5 w-px bg-border" />
+
+          <Link href={`/courses/${courseId}/manage`} title="Manage Students">
+            <Button variant="ghost" size="icon-sm">
+              <Users className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </header>
 
