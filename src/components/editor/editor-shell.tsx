@@ -21,6 +21,8 @@ import { InspectorPanel } from './inspector/inspector-panel';
 import { PreviewModal } from './preview/preview-modal';
 import { ThemeModal } from './theme/theme-modal';
 import { updateCourseContent } from '@/app/actions/courses';
+import { buildScormCourse } from '@/lib/scorm/courseBuilder';
+import JSZip from 'jszip';
 import type { CourseContent, CourseSection, Activity, CourseThemeConfig } from '@/types/activities';
 
 interface EditorShellProps {
@@ -58,6 +60,32 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
     setSaving(false);
     savingRef.current = false;
   }, [courseId, content]);
+
+  // SCORM export handler
+  const [exporting, setExporting] = useState(false);
+  const handleExportScorm = useCallback(async () => {
+    setExporting(true);
+    try {
+      const files = buildScormCourse(content);
+      const zip = new JSZip();
+      for (const [filename, fileContent] of Object.entries(files)) {
+        zip.file(filename, fileContent);
+      }
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${content.title || 'course'}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('SCORM export failed:', err);
+    } finally {
+      setExporting(false);
+    }
+  }, [content]);
 
   // Cmd+S / Ctrl+S keyboard shortcut
   useEffect(() => {
@@ -241,7 +269,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
           <Button variant="ghost" size="icon-sm" title="Preview" onClick={() => setShowPreview(true)}>
             <Eye className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon-sm" title="Export SCORM">
+          <Button variant="ghost" size="icon-sm" title="Export SCORM" loading={exporting} onClick={handleExportScorm}>
             <Download className="h-4 w-4" />
           </Button>
           <Button
