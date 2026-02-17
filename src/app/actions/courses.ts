@@ -184,6 +184,30 @@ export async function updateCourseContent(courseId: string, content: CourseConte
   return { success: true };
 }
 
+export async function duplicateCourse(courseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Not authenticated' };
+
+  // Get the original course
+  const { course, error: fetchError } = await getCourse(courseId);
+  if (fetchError || !course) return { error: fetchError || 'Course not found' };
+
+  // Create new course with "(copy)" suffix
+  const newTitle = `${course.title || 'Untitled'} (copy)`;
+  const result = await createCourse(newTitle);
+  if (result.error || !result.courseId) return { error: result.error || 'Failed to create copy' };
+
+  // Deep clone the content and update it on the new course
+  const clonedContent = JSON.parse(JSON.stringify(course.content)) as CourseContent;
+  clonedContent.title = newTitle;
+  const updateResult = await updateCourseContent(result.courseId, clonedContent);
+  if (updateResult.error) return { error: updateResult.error };
+
+  return { success: true, courseId: result.courseId };
+}
+
 export async function deleteCourse(courseId: string) {
   const admin = getSupabaseAdmin();
 

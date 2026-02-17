@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Trash2, Globe, Clock, MoreVertical } from 'lucide-react';
+import { Trash2, Globe, Clock, MoreVertical, Copy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui';
-import { deleteCourse } from '@/app/actions/courses';
+import { deleteCourse, duplicateCourse } from '@/app/actions/courses';
 
 interface CourseCardProps {
   course: {
@@ -24,12 +24,21 @@ export function CourseCard({ course }: CourseCardProps) {
   const [showMenu, setShowMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
 
   const handleDelete = async () => {
     setDeleting(true);
     await deleteCourse(course.id);
     setShowMenu(false);
     setConfirmDelete(false);
+    router.refresh();
+  };
+
+  const handleDuplicate = async () => {
+    setDuplicating(true);
+    await duplicateCourse(course.id);
+    setShowMenu(false);
+    setDuplicating(false);
     router.refresh();
   };
 
@@ -113,13 +122,23 @@ export function CourseCard({ course }: CourseCardProps) {
                 </div>
               </div>
             ) : (
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete course
-              </button>
+              <>
+                <button
+                  onClick={handleDuplicate}
+                  disabled={duplicating}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-foreground hover:bg-surface-hover transition-colors disabled:opacity-50"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                  {duplicating ? 'Duplicating...' : 'Duplicate'}
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete course
+                </button>
+              </>
             )}
           </div>
         </>

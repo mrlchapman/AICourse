@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { X, Trash2, Sparkles, Copy, Loader2, PanelRightClose, PanelRightOpen, Maximize2 } from 'lucide-react';
+import { X, Trash2, Sparkles, Copy, Loader2, PanelRightClose, PanelRightOpen, Maximize2, Bookmark, Check } from 'lucide-react';
 import { Button, Input, Textarea } from '@/components/ui';
+import { saveTemplate } from '@/app/actions/templates';
 import { getActivityDisplayInfo, ACTIVITY_CONFIG, type Activity, type CourseContent } from '@/types/activities';
 import { TextContentEditor } from './editors/text-content-editor';
 import { ImageEditor } from './editors/image-editor';
@@ -45,6 +46,7 @@ interface InspectorPanelProps {
   courseContent?: CourseContent;
   onUpdate: (updates: Partial<Activity>) => void;
   onDelete: () => void;
+  onDuplicate?: () => void;
   onClose: () => void;
 }
 
@@ -71,11 +73,15 @@ const MIN_WIDTH = 288;
 const DEFAULT_WIDTH = 320;
 const MAX_WIDTH = 640;
 
-export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, onDelete, onClose }: InspectorPanelProps) {
+export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, onDelete, onDuplicate, onClose }: InspectorPanelProps) {
   const { icon, label } = getActivityDisplayInfo(activity);
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState<string | null>(null);
   const [aiTopic, setAiTopic] = useState('');
+  const [showTemplateName, setShowTemplateName] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [savingTemplate, setSavingTemplate] = useState(false);
+  const [templateSaved, setTemplateSaved] = useState(false);
   const [panelWidth, setPanelWidth] = useState(DEFAULT_WIDTH);
   const isDragging = useRef(false);
   const startX = useRef(0);
@@ -162,6 +168,17 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleSaveTemplate = async () => {
+    if (!templateName.trim()) return;
+    setSavingTemplate(true);
+    const { id, order, editorLabel, ...templateContent } = activity as any;
+    await saveTemplate(templateName.trim(), activity.type, templateContent);
+    setSavingTemplate(false);
+    setShowTemplateName(false);
+    setTemplateName('');
+    setTemplateSaved(true);
   };
 
   return (
@@ -259,10 +276,52 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
             </Button>
           </div>
         )}
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+        <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={onDuplicate}>
           <Copy className="h-4 w-4" />
           Duplicate
         </Button>
+        {showTemplateName ? (
+          <div className="flex items-center gap-1.5">
+            <Input
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Template name..."
+              className="text-xs flex-1"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && templateName.trim() && !savingTemplate) {
+                  handleSaveTemplate();
+                }
+                if (e.key === 'Escape') {
+                  setShowTemplateName(false);
+                  setTemplateName('');
+                }
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 px-2"
+              disabled={!templateName.trim() || savingTemplate}
+              onClick={handleSaveTemplate}
+            >
+              {savingTemplate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            </Button>
+          </div>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={() => {
+              setShowTemplateName(true);
+              setTemplateSaved(false);
+            }}
+          >
+            <Bookmark className="h-4 w-4" />
+            {templateSaved ? 'Saved!' : 'Save as Template'}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="sm"

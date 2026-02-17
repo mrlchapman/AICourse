@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Bookmark, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ACTIVITY_CONFIG, type ActivityType, type Activity } from '@/types/activities';
+import { getUserTemplates, deleteTemplate } from '@/app/actions/templates';
 
 interface InsertMenuProps {
   onInsert: (activity: Activity) => void;
@@ -170,9 +171,19 @@ function createDefaultActivity(type: ActivityType): Activity {
   }
 }
 
+interface TemplateItem {
+  id: string;
+  name: string;
+  activity_type: string;
+  content: Record<string, unknown>;
+}
+
 export function InsertMenu({ onInsert, position = 'between', className }: InsertMenuProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'blocks' | 'templates'>('blocks');
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -180,7 +191,35 @@ export function InsertMenu({ onInsert, position = 'between', className }: Insert
     if (open && searchRef.current) {
       searchRef.current.focus();
     }
-  }, [open]);
+    if (open && tab === 'templates') {
+      loadTemplates();
+    }
+  }, [open, tab]);
+
+  const loadTemplates = async () => {
+    setLoadingTemplates(true);
+    const result = await getUserTemplates();
+    setTemplates((result.templates || []) as TemplateItem[]);
+    setLoadingTemplates(false);
+  };
+
+  const handleDeleteTemplate = async (e: React.MouseEvent, templateId: string) => {
+    e.stopPropagation();
+    await deleteTemplate(templateId);
+    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+  };
+
+  const handleInsertTemplate = (template: TemplateItem) => {
+    const activity: Activity = {
+      ...template.content,
+      id: `activity-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      type: template.activity_type as ActivityType,
+      order: 0,
+    } as Activity;
+    onInsert(activity);
+    setOpen(false);
+    setSearch('');
+  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -239,6 +278,33 @@ export function InsertMenu({ onInsert, position = 'between', className }: Insert
             transition={{ duration: 0.15 }}
             className="absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 w-80 bg-surface rounded-xl border border-border shadow-lg overflow-hidden"
           >
+            {/* Tabs */}
+            <div className="flex border-b border-border">
+              <button
+                onClick={() => setTab('blocks')}
+                className={cn(
+                  'flex-1 px-3 py-2 text-xs font-medium transition-colors',
+                  tab === 'blocks'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-foreground-muted hover:text-foreground'
+                )}
+              >
+                Blocks
+              </button>
+              <button
+                onClick={() => setTab('templates')}
+                className={cn(
+                  'flex-1 px-3 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5',
+                  tab === 'templates'
+                    ? 'text-primary border-b-2 border-primary'
+                    : 'text-foreground-muted hover:text-foreground'
+                )}
+              >
+                <Bookmark className="h-3 w-3" />
+                My Templates
+              </button>
+            </div>
+
             {/* Search */}
             <div className="p-2 border-b border-border">
               <div className="relative">
@@ -246,7 +312,7 @@ export function InsertMenu({ onInsert, position = 'between', className }: Insert
                 <input
                   ref={searchRef}
                   type="text"
-                  placeholder="Search blocks..."
+                  placeholder={tab === 'blocks' ? 'Search blocks...' : 'Search templates...'}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-hover rounded-md border-none outline-none placeholder:text-foreground-subtle"
@@ -254,35 +320,82 @@ export function InsertMenu({ onInsert, position = 'between', className }: Insert
               </div>
             </div>
 
-            {/* Categories */}
-            <div className="max-h-72 overflow-y-auto p-2">
-              {categories.map((category) => {
-                const items = filteredTypes.filter(([, c]) => c.category === category);
-                if (items.length === 0) return null;
-                return (
-                  <div key={category} className="mb-2 last:mb-0">
-                    <p className="text-xs font-semibold text-foreground-subtle uppercase tracking-wider px-2 py-1">
-                      {category}
-                    </p>
-                    <div className="grid grid-cols-2 gap-0.5">
-                      {items.map(([type, config]) => (
-                        <button
-                          key={type}
-                          onClick={() => handleInsert(type as ActivityType)}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md text-left hover:bg-surface-hover transition-colors"
-                        >
-                          <span className="text-sm shrink-0">{config.icon}</span>
-                          <span className="text-xs text-foreground truncate">{config.label}</span>
-                        </button>
-                      ))}
+            {tab === 'blocks' ? (
+              /* Categories */
+              <div className="max-h-72 overflow-y-auto p-2">
+                {categories.map((category) => {
+                  const items = filteredTypes.filter(([, c]) => c.category === category);
+                  if (items.length === 0) return null;
+                  return (
+                    <div key={category} className="mb-2 last:mb-0">
+                      <p className="text-xs font-semibold text-foreground-subtle uppercase tracking-wider px-2 py-1">
+                        {category}
+                      </p>
+                      <div className="grid grid-cols-2 gap-0.5">
+                        {items.map(([type, config]) => (
+                          <button
+                            key={type}
+                            onClick={() => handleInsert(type as ActivityType)}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md text-left hover:bg-surface-hover transition-colors"
+                          >
+                            <span className="text-sm shrink-0">{config.icon}</span>
+                            <span className="text-xs text-foreground truncate">{config.label}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
+                  );
+                })}
+                {filteredTypes.length === 0 && (
+                  <p className="text-sm text-foreground-muted text-center py-4">No blocks found</p>
+                )}
+              </div>
+            ) : (
+              /* Templates */
+              <div className="max-h-72 overflow-y-auto p-2">
+                {loadingTemplates ? (
+                  <p className="text-sm text-foreground-muted text-center py-4">Loading...</p>
+                ) : templates.length === 0 ? (
+                  <div className="text-center py-6 px-4">
+                    <Bookmark className="h-8 w-8 text-foreground-subtle mx-auto mb-2" />
+                    <p className="text-sm text-foreground-muted">No templates yet</p>
+                    <p className="text-xs text-foreground-subtle mt-1">
+                      Save an activity as a template from the inspector panel
+                    </p>
                   </div>
-                );
-              })}
-              {filteredTypes.length === 0 && (
-                <p className="text-sm text-foreground-muted text-center py-4">No blocks found</p>
-              )}
-            </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {templates
+                      .filter((t) =>
+                        search === '' || t.name.toLowerCase().includes(search.toLowerCase())
+                      )
+                      .map((template) => {
+                        const config = ACTIVITY_CONFIG[template.activity_type as ActivityType];
+                        return (
+                          <button
+                            key={template.id}
+                            onClick={() => handleInsertTemplate(template)}
+                            className="w-full flex items-center gap-2 px-2 py-2 rounded-md text-left hover:bg-surface-hover transition-colors group"
+                          >
+                            <span className="text-sm shrink-0">{config?.icon || '📄'}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-foreground truncate">{template.name}</p>
+                              <p className="text-[10px] text-foreground-subtle">{config?.label || template.activity_type}</p>
+                            </div>
+                            <button
+                              onClick={(e) => handleDeleteTemplate(e, template.id)}
+                              className="p-1 rounded opacity-0 group-hover:opacity-100 text-foreground-subtle hover:text-danger hover:bg-danger-light transition-all"
+                              title="Delete template"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </button>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -11,6 +11,8 @@ import {
   X,
   PanelLeftClose,
   PanelLeft,
+  Undo2,
+  Redo2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { nanoid } from 'nanoid';
@@ -21,6 +23,7 @@ import { InspectorPanel } from './inspector/inspector-panel';
 import { PreviewModal } from './preview/preview-modal';
 import { ThemeModal } from './theme/theme-modal';
 import { updateCourseContent } from '@/app/actions/courses';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { buildScormCourse } from '@/lib/scorm/courseBuilder';
 import JSZip from 'jszip';
 import type { CourseContent, CourseSection, Activity, CourseThemeConfig } from '@/types/activities';
@@ -37,7 +40,7 @@ const DEFAULT_CONTENT: CourseContent = {
 };
 
 export function EditorShell({ courseId, initialContent }: EditorShellProps) {
-  const [content, setContent] = useState<CourseContent>(initialContent || DEFAULT_CONTENT);
+  const { content, setContent, undo, redo, canUndo, canRedo } = useUndoRedo(initialContent || DEFAULT_CONTENT);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
     initialContent?.sections?.[0]?.id ?? null
   );
@@ -87,17 +90,25 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
     }
   }, [content]);
 
-  // Cmd+S / Ctrl+S keyboard shortcut
+  // Keyboard shortcuts: Cmd+S, Cmd+Z, Cmd+Shift+Z
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault();
         handleSave();
       }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && e.shiftKey) {
+        e.preventDefault();
+        redo();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handleSave]);
+  }, [handleSave, undo, redo]);
 
   // Section management
   const addSection = useCallback((title: string = 'New Section') => {
@@ -219,6 +230,14 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
     }));
   }, []);
 
+  const duplicateActivity = useCallback(() => {
+    if (!selectedSectionId || !selectedActivity) return;
+    const cloned = JSON.parse(JSON.stringify(selectedActivity)) as Activity;
+    cloned.id = `activity-${nanoid(8)}`;
+    const insertIndex = selectedActivity.order + 1;
+    addActivity(selectedSectionId, cloned, insertIndex);
+  }, [selectedSectionId, selectedActivity, addActivity]);
+
   const updateCourseTitle = useCallback((title: string) => {
     setContent((prev) => ({ ...prev, title }));
   }, []);
@@ -253,6 +272,29 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
             <PanelLeft className="h-4 w-4" />
           )}
         </Button>
+
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Undo (⌘Z)"
+            disabled={!canUndo}
+            onClick={undo}
+          >
+            <Undo2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            title="Redo (⌘⇧Z)"
+            disabled={!canRedo}
+            onClick={redo}
+          >
+            <Redo2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div className="h-5 w-px bg-border" />
 
         <input
           type="text"
@@ -339,6 +381,7 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
                 deleteActivity(selectedSectionId, selectedActivityId);
               }
             }}
+            onDuplicate={duplicateActivity}
             onClose={() => setSelectedActivityId(null)}
           />
         )}
