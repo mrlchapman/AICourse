@@ -1,16 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { signUp, signInWithGoogle } from '@/app/actions/auth';
 
-export default function SignupPage() {
+function SignupPageContent() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
+  const initialRole = searchParams.get('role') === 'student' ? 'student' : 'teacher';
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [role, setRole] = useState<'teacher' | 'student'>('teacher');
+  const [role, setRole] = useState<'teacher' | 'student'>(initialRole);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,6 +23,7 @@ export default function SignupPage() {
 
     const formData = new FormData(e.currentTarget);
     formData.set('role', role);
+    formData.set('redirect', redirectTo);
     const result = await signUp(formData);
 
     if (result?.error) {
@@ -30,7 +35,7 @@ export default function SignupPage() {
   }
 
   async function handleGoogleSignup() {
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(redirectTo);
     if (result?.error) {
       setError(result.error);
     }
@@ -157,11 +162,19 @@ export default function SignupPage() {
 
         <p className="text-center text-sm text-foreground-muted">
           Already have an account?{' '}
-          <Link href="/login" className="text-primary hover:underline font-medium">
+          <Link href={`/login${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-primary hover:underline font-medium">
             Sign in
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupPageContent />
+    </Suspense>
   );
 }

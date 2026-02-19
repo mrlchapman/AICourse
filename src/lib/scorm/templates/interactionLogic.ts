@@ -11,6 +11,63 @@ export const INTERACTION_LOGIC_JS = `
   window.currentSectionIndex = 0;
   window.courseSections = [];
   window.sectionProgress = [];
+  window.activityStates = {};
+  window.lastHeartbeat = Date.now();
+
+  // Idle detection
+  window.lastInteraction = Date.now();
+
+  function updateInteraction() {
+     window.lastInteraction = Date.now();
+  }
+
+  var interactionTimeout;
+  function throttledUpdateInteraction() {
+      if (!interactionTimeout) {
+          interactionTimeout = setTimeout(function() {
+              window.lastInteraction = Date.now();
+              interactionTimeout = null;
+          }, 1000);
+      }
+  }
+
+  ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function(evt) {
+     window.addEventListener(evt, throttledUpdateInteraction, { passive: true });
+  });
+
+  // Heartbeat to track time spent
+  setInterval(function() {
+    var now = Date.now();
+    var isIdle = (now - window.lastInteraction) > (5 * 60 * 1000);
+    var isHidden = document.hidden;
+
+    if (isIdle || isHidden) {
+        window.lastHeartbeat = now;
+        return;
+    }
+
+    var diff = Math.floor((now - window.lastHeartbeat) / 1000);
+    if (diff >= 30) {
+      if (window.parent && window.parent.postMessage) {
+        window.parent.postMessage({ type: 'HEARTBEAT', seconds: diff }, '*');
+        window.lastHeartbeat = now;
+      }
+    }
+  }, 10000);
+
+  // Log user responses for quizzes and knowledge checks
+  window.logResponse = function(activityId, questionId, selectedId, isCorrect, points) {
+    if (window.parent && window.parent.postMessage) {
+      window.parent.postMessage({
+        type: 'LOG_RESPONSE',
+        activityId: activityId,
+        questionId: questionId,
+        selectedId: selectedId,
+        isCorrect: isCorrect,
+        points: points
+      }, '*');
+    }
+  };
 
   window.completeGamificationActivity = function(activityId) {
     const activityEl = document.getElementById('activity-' + activityId);
@@ -536,8 +593,21 @@ export const INTERACTION_LOGIC_JS = `
     sections.forEach((section, index) => {
       section.style.display = index === 0 ? 'block' : 'none';
     });
-    
+
     window.currentSectionIndex = 0;
+
+    // In review mode, unlock and mark all sections as completed
+    if (window.isReviewMode) {
+      window.courseSections.forEach(function(section, index) {
+        section.unlocked = true;
+        section.completed = true;
+      });
+      window.sectionProgress.forEach(function(progress) {
+        progress.unlocked = true;
+        progress.completed = true;
+        progress.maxPageIndex = 999;
+      });
+    }
   }
 
   // Check if section is complete
@@ -617,7 +687,7 @@ export const INTERACTION_LOGIC_JS = `
 
   // Navigate to next section
   window.showNextSection = function() {
-    if (!window.isSectionComplete(window.currentSectionIndex)) {
+    if (!window.isReviewMode && !window.isSectionComplete(window.currentSectionIndex)) {
       window.showCourseToast(
         'warning',
         'Activities Incomplete',
@@ -655,27 +725,6 @@ export const INTERACTION_LOGIC_JS = `
     updateSidebarContent();
   };
 
-  // Calculate final score
-  function calculateFinalScore() {
-    const totalChecks = Object.keys(window.knowledgeCheckResults).length;
-    if (totalChecks === 0) return 100;
-    
-    let correctCount = 0;
-    Object.values(window.knowledgeCheckResults).forEach(result => {
-      if (result === true) correctCount++;
-    });
-    
-    return Math.round((correctCount / totalChecks) * 100);
-  }
-
-  // Update score display and SCORM
-  window.updateScore = function() {
-    const score = calculateFinalScore();
-    if (typeof setScore === 'function') {
-      setScore(score);
-    }
-  };
-
   // Score calculation and display
   function calculateFinalScore() {
     var totalQuestions = 0;
@@ -689,7 +738,7 @@ export const INTERACTION_LOGIC_JS = `
       }
     });
 
-    if (totalQuestions === 0) return 0;
+    if (totalQuestions === 0) return 100;
     return Math.round((correctAnswers / totalQuestions) * 100);
   }
 
@@ -1162,6 +1211,7 @@ export const INTERACTION_LOGIC_JS = `
       knowledgeCheckResults: window.knowledgeCheckResults || {},
       currentSectionIndex: window.currentSectionIndex || 0,
       sectionProgress: window.sectionProgress || [],
+      activityStates: window.activityStates || {},
       completedInteractionIds: Array.from(window.completedInteractions || []).map(function(el) {
         return el.id;
       })
@@ -1232,6 +1282,44 @@ export const INTERACTION_LOGIC_JS = `
     if (stateData.sectionProgress) {
       window.sectionProgress = stateData.sectionProgress;
     }
+
+    if (stateData.activityStates) {
+      window.activityStates = stateData.activityStates;
+    }
+
+    // Restore Completed Interactions
+    if (stateData.completedInteractionIds) {
+      stateData.completedInteractionIds.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) window.completedInteractions.add(el);
+      });
+    }
+
+    // In review mode, unlock everything
+    if (window.isReviewMode) {
+        // Mark all continue dividers as completed
+        document.querySelectorAll('[data-continue-divider="true"]').forEach(function(div) {
+            div.classList.add('divider-completed');
+        });
+
+        // Reveal all subsections
+        document.querySelectorAll('[data-subsection="true"]').forEach(function(sub) {
+            sub.classList.remove('subsection-hidden');
+            sub.classList.add('subsection-revealed');
+        });
+
+        // Mark all interactive elements as complete so navigation isn't blocked
+        document.querySelectorAll('.interactive-card, .knowledge-check').forEach(function(el) {
+            if (window.completedInteractions) {
+                window.completedInteractions.add(el);
+            }
+        });
+    }
+
+    setTimeout(function() {
+        if (typeof window.updateScore === 'function') window.updateScore();
+        if (typeof window.updateActivityProgress === 'function') window.updateActivityProgress();
+    }, 200);
 
     console.log('State restored from SCORM:', stateData);
   }
@@ -1505,7 +1593,39 @@ export const INTERACTION_LOGIC_JS = `
     targetSection.style.display = 'block';
     window.currentSectionIndex = sectionIndex;
 
-    targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Reset subsection visibility to show only the first page
+    var subsections = targetSection.querySelectorAll('[data-subsection="true"]');
+    var dividers = targetSection.querySelectorAll('[data-continue-divider="true"]');
+
+    if (subsections.length > 1) {
+      subsections.forEach(function(sub, i) {
+        if (i === 0) {
+          // Show the first subsection
+          sub.classList.remove('subsection-hidden');
+          sub.classList.add('subsection-revealed');
+          sub.classList.add('subsection-first');
+        } else {
+          // Check if this subsection was already revealed via state
+          var prevDivider = dividers[i - 1];
+          var wasRevealed = prevDivider && prevDivider.classList.contains('divider-completed');
+          if (!wasRevealed) {
+            sub.classList.add('subsection-hidden');
+            sub.classList.remove('subsection-revealed');
+          }
+        }
+      });
+
+      // Reset dividers that weren't already completed via state
+      dividers.forEach(function(div) {
+        var wasCompleted = window.activityStates && window.activityStates['dividers'];
+        var activityId = div.id ? div.id.replace('activity-', '') : '';
+        if (!(wasCompleted && wasCompleted[activityId])) {
+          div.classList.remove('divider-completed');
+        }
+      });
+    }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     updateSidebarContent();
     saveStateToSCORM();
   };

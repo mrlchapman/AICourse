@@ -78,6 +78,10 @@ function renderSection(section: CourseSection, isLastSection: boolean = false, h
     html += renderActivity(activity);
   });
 
+  // Close the last subsection div (may be the first or one opened by a divider)
+  html += `</div>`;
+
+  // Section navigation goes OUTSIDE subsection divs so it's always visible
   if (isLastSection) {
     html += `
       <div class="section-navigation" style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 2px solid #e5e7eb;">
@@ -125,7 +129,6 @@ function renderSection(section: CourseSection, isLastSection: boolean = false, h
     `;
   }
 
-  html += `</div>`;
   html += `</div>`;
 
   return html;

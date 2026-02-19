@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getActivityDisplayInfo, type Activity } from '@/types/activities';
+import DOMPurify from 'isomorphic-dompurify';
 
 interface ActivityBlockProps {
   activity: Activity;
@@ -74,7 +75,7 @@ function ActivityPreview({ activity }: { activity: Activity }) {
       return (
         <div className="prose prose-sm max-w-none text-foreground">
           <div
-            dangerouslySetInnerHTML={{ __html: activity.content || '<p class="text-foreground-subtle italic">Empty text block</p>' }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(activity.content || '<p class="text-foreground-subtle italic">Empty text block</p>') }}
           />
         </div>
       );
@@ -209,7 +210,7 @@ function ActivityPreview({ activity }: { activity: Activity }) {
             {activity.content && (
               <div
                 className={cn('prose max-w-none text-xs ml-9 opacity-85', v.textColor)}
-                dangerouslySetInnerHTML={{ __html: activity.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(activity.content) }}
               />
             )}
           </div>

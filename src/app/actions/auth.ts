@@ -32,7 +32,11 @@ export async function signUp(formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
   const displayName = formData.get('displayName') as string;
-  const role = (formData.get('role') as string) || 'teacher';
+  const rawRole = (formData.get('role') as string) || 'teacher';
+  const allowedRoles = ['teacher', 'student'];
+  const role = allowedRoles.includes(rawRole) ? rawRole : 'teacher';
+  const rawRedirect = (formData.get('redirect') as string) || '/';
+  const redirectTo = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('://')) ? rawRedirect : '/';
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -58,9 +62,9 @@ export async function signUp(formData: FormData) {
     await ensureProfile(data.user.id, email, displayName, role);
   }
 
-  // If session exists, user was auto-confirmed - redirect to dashboard
+  // If session exists, user was auto-confirmed - redirect
   if (data.session) {
-    redirect('/');
+    redirect(redirectTo);
   }
 
   return { success: true };
@@ -71,6 +75,9 @@ export async function signIn(formData: FormData) {
 
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
+  const rawRedirect = (formData.get('redirect') as string) || '/';
+  // Sanitize redirect to prevent open redirect
+  const redirectTo = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('://')) ? rawRedirect : '/';
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -86,16 +93,22 @@ export async function signIn(formData: FormData) {
     await ensureProfile(data.user.id, data.user.email || email);
   }
 
-  redirect('/');
+  redirect(redirectTo);
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(redirectTo?: string) {
   const supabase = await createClient();
+
+  // Build callback URL with optional redirect
+  let callbackUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`;
+  if (redirectTo && redirectTo !== '/' && redirectTo.startsWith('/') && !redirectTo.startsWith('//') && !redirectTo.includes('://')) {
+    callbackUrl += `?next=${encodeURIComponent(redirectTo)}`;
+  }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback`,
+      redirectTo: callbackUrl,
       queryParams: {
         access_type: 'offline',
         prompt: 'consent',

@@ -15,6 +15,7 @@ export function renderDivider(activity: DividerActivity): string {
   if (clickToContinue) {
     return `
 <!-- End of sub-section, start of continue divider -->
+${getClickToContinueStyles()}
 </div>
 <div class="activity divider-activity divider-continue" id="activity-${activity.id}" data-activity-type="divider" data-continue-divider="true" data-subsection-index="">
   <div class="continue-divider-content">
@@ -86,20 +87,44 @@ export function renderDivider(activity: DividerActivity): string {
     mainContent.scrollTop = 0;
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
+    // Save to state
+    if (!window.activityStates) window.activityStates = {};
+    if (!window.activityStates['dividers']) window.activityStates['dividers'] = {};
+    window.activityStates['dividers']['${activity.id}'] = true;
+
     // Update progress based on subsections viewed
     if (window.updateSubsectionProgress) {
       window.updateSubsectionProgress();
     }
-    
+
     // Update sidebar to show sub-section navigation
     if (window.updateSidebarAfterContinue) {
       window.updateSidebarAfterContinue();
     }
+
+    if (typeof saveStateToSCORM === 'function') {
+        saveStateToSCORM();
+    }
   };
+
+  // Restore state
+  (function restore() {
+      if (window.activityStates && window.activityStates['dividers'] && window.activityStates['dividers']['${activity.id}']) {
+          setTimeout(function() {
+              var btn = document.getElementById('continue-btn-${safeId}');
+              var divider = document.getElementById('activity-${activity.id}');
+              var nextSubsection = document.getElementById('subsection-after-${safeId}');
+
+              if (divider) divider.classList.add('divider-completed');
+              if (nextSubsection) {
+                  nextSubsection.classList.remove('subsection-hidden');
+                  nextSubsection.classList.add('subsection-revealed');
+              }
+          }, 100);
+      }
+  })();
 })();
 </script>
-
-${getClickToContinueStyles()}
 `;
   }
 

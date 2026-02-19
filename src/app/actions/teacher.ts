@@ -14,6 +14,26 @@ export async function publishCourse(courseId: string) {
   if (!user) return { error: 'Not authenticated' };
 
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Fetch course and verify ownership
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
+
   const { error } = await (admin
     .from('courses') as any)
     .update({
@@ -38,6 +58,26 @@ export async function unpublishCourse(courseId: string) {
   if (!user) return { error: 'Not authenticated' };
 
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Fetch course and verify ownership
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
+
   const { error } = await (admin
     .from('courses') as any)
     .update({
@@ -119,8 +159,38 @@ export async function deleteInviteCode(inviteId: string) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated' };
 
-  const { error } = await supabase
-    .from('course_invites')
+  const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Look up the invite to find its course_id
+  const { data: invite } = await (admin
+    .from('course_invites') as any)
+    .select('id, course_id')
+    .eq('id', inviteId)
+    .single();
+
+  if (!invite) return { error: 'Invite not found' };
+
+  // Verify the user owns the course this invite belongs to
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', invite.course_id)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
+
+  const { error } = await (admin
+    .from('course_invites') as any)
     .delete()
     .eq('id', inviteId);
 
@@ -132,7 +202,30 @@ export async function deleteInviteCode(inviteId: string) {
  * Get students enrolled in a course (with full analytics data)
  */
 export async function getCourseStudents(courseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated', students: [] };
+
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found', students: [] };
+
+  // Fetch course and verify ownership
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return { error: 'Course not found', students: [] };
+  if (course.user_id !== profile.id) return { error: 'Not authorized', students: [] };
 
   const { data: enrollments, error } = await (admin
     .from('course_enrollments') as any)
@@ -272,6 +365,26 @@ export async function updateCourseDeadlines(
   if (!user) return { error: 'Not authenticated' };
 
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Fetch course and verify ownership
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
+
   const { error } = await (admin
     .from('courses') as any)
     .update({
@@ -289,7 +402,39 @@ export async function updateCourseDeadlines(
  * Remove a student from a course
  */
 export async function removeStudent(enrollmentId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Look up the enrollment to find its course_id
+  const { data: enrollment } = await (admin
+    .from('course_enrollments') as any)
+    .select('id, course_id')
+    .eq('id', enrollmentId)
+    .single() as { data: any };
+
+  if (!enrollment) return { error: 'Enrollment not found' };
+
+  // Verify the user owns the course this enrollment belongs to
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', enrollment.course_id)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
 
   const { error } = await (admin
     .from('course_enrollments') as any)

@@ -67,11 +67,14 @@ export async function joinCourse(code: string) {
 
   if (enrollError) return { error: enrollError.message };
 
-  // Increment invite uses
+  // Atomically increment invite uses with optimistic lock
+  // If another request incremented first, our update affects 0 rows
+  // but the enrollment is already created so the student still gets in
   await (admin
     .from('course_invites') as any)
     .update({ uses: invite.uses + 1 })
-    .eq('id', invite.id);
+    .eq('id', invite.id)
+    .eq('uses', invite.uses);
 
   return { success: true, enrollmentId: enrollment.id, courseId: invite.course_id };
 }
@@ -130,6 +133,16 @@ export async function getEnrollment(enrollmentId: string) {
   if (!user) return { error: 'Not authenticated' };
 
   const admin = getSupabaseAdmin();
+
+  // Get user profile to verify enrollment ownership
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
   const { data: enrollment, error } = await (admin
     .from('course_enrollments') as any)
     .select('*')
@@ -137,6 +150,9 @@ export async function getEnrollment(enrollmentId: string) {
     .single() as { data: any; error: any };
 
   if (error || !enrollment) return { error: 'Enrollment not found' };
+
+  // Verify the enrollment belongs to this student
+  if (enrollment.student_id !== profile.id) return { error: 'Not authorized' };
 
   // Get course content
   const { data: course } = await (admin
@@ -179,6 +195,15 @@ export async function updateProgress(
 
   const admin = getSupabaseAdmin();
 
+  // Get user profile to verify enrollment ownership
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
   // Get current enrollment
   const { data: enrollment } = await (admin
     .from('course_enrollments') as any)
@@ -187,6 +212,9 @@ export async function updateProgress(
     .single() as { data: any };
 
   if (!enrollment) return { error: 'Enrollment not found' };
+
+  // Verify the enrollment belongs to this student
+  if (enrollment.student_id !== profile.id) return { error: 'Not authorized' };
 
   const progress = enrollment.progress || {};
   const responses = enrollment.responses || [];
@@ -250,15 +278,31 @@ export async function updateProgress(
  * Mark course as completed
  */
 export async function completeCourse(enrollmentId: string, finalScore?: number) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated' };
+
   const admin = getSupabaseAdmin();
+
+  // Get user profile to verify enrollment ownership
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
 
   const { data: enrollment } = await (admin
     .from('course_enrollments') as any)
-    .select('joined_at, total_time_spent')
+    .select('joined_at, total_time_spent, student_id')
     .eq('id', enrollmentId)
     .single() as { data: any };
 
   if (!enrollment) return { error: 'Enrollment not found' };
+
+  // Verify the enrollment belongs to this student
+  if (enrollment.student_id !== profile.id) return { error: 'Not authorized' };
 
   const now = new Date();
   const timeToComplete = Math.floor(

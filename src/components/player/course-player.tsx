@@ -22,6 +22,7 @@ const BRIDGE_SCRIPT = (initialStateJson: string) => `
 
     let suspendData = JSON.stringify(initialState.suspendData || {});
     const lessonStatus = initialState.status || 'incomplete';
+    let lastKnownScore = initialState.score;
 
     window.API = {
       LMSInitialize: function() { return "true"; },
@@ -38,11 +39,12 @@ const BRIDGE_SCRIPT = (initialStateJson: string) => `
                   window.parent.postMessage({ type: 'SUSPEND_DATA', data: val }, '*');
               }
               if (key === 'cmi.core.score.raw') {
+                   lastKnownScore = Number(val);
                    window.parent.postMessage({ type: 'UPDATE_SCORE', score: val }, '*');
               }
               if (key === 'cmi.core.lesson_status') {
                    if (val === 'completed' || val === 'passed') {
-                       window.parent.postMessage({ type: 'COURSE_COMPLETE' }, '*');
+                       window.parent.postMessage({ type: 'COURSE_COMPLETE', data: { score: lastKnownScore } }, '*');
                    }
               }
           } catch(e) { console.error('Bridge error', e); }
@@ -74,6 +76,7 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const htmlRef = useRef<string>('');
   const hasGeneratedRef = useRef(false);
 
@@ -253,7 +256,8 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
       </script>
       `;
 
-      fullHtml = fullHtml.replace('</body>', `${BRIDGE_SCRIPT(JSON.stringify(initialState))}${RESTORE_SCRIPT}</body>`);
+      const safeInitialState = JSON.stringify(initialState).replace(/<\//g, '<\\/');
+      fullHtml = fullHtml.replace('</body>', `${BRIDGE_SCRIPT(safeInitialState)}${RESTORE_SCRIPT}</body>`);
 
       htmlRef.current = fullHtml;
       hasGeneratedRef.current = true;
@@ -269,6 +273,7 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
       if (!event.data || !event.data.type) return;
+      if (event.source !== iframeRef.current?.contentWindow) return;
       try {
         switch (event.data.type) {
           case 'SECTION_COMPLETE':
@@ -286,7 +291,7 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
             }
             break;
           case 'COURSE_COMPLETE':
-            await completeCourse(enrollment.id, enrollment.final_score);
+            await completeCourse(enrollment.id, event.data.data?.score ?? enrollment.final_score);
             break;
           case 'HEARTBEAT':
             await updateProgress(enrollment.id, {
@@ -410,10 +415,11 @@ export default function CoursePlayer({ enrollment, courseContent }: CoursePlayer
       {/* Iframe */}
       <div className="flex-1 w-full bg-white relative" role="main">
         <iframe
+          ref={iframeRef}
           srcDoc={displayHtml}
           className="absolute inset-0 w-full h-full border-0"
           title={`Course Content: ${courseContent.title || 'Course'}`}
-          sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups allow-top-navigation"
+          sandbox="allow-scripts allow-modals allow-forms allow-popups"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />

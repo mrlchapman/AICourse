@@ -1,16 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { BookOpen } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { signIn, signInWithGoogle } from '@/app/actions/auth';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/';
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -18,6 +20,7 @@ export default function LoginPage() {
     setError('');
 
     const formData = new FormData(e.currentTarget);
+    formData.set('redirect', redirectTo);
     const result = await signIn(formData);
 
     if (result?.error) {
@@ -28,7 +31,7 @@ export default function LoginPage() {
   }
 
   async function handleGoogleLogin() {
-    const result = await signInWithGoogle();
+    const result = await signInWithGoogle(redirectTo);
     if (result?.error) {
       setError(result.error);
     }
@@ -112,11 +115,19 @@ export default function LoginPage() {
 
         <p className="text-center text-sm text-foreground-muted">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-primary hover:underline font-medium">
+          <Link href={`/signup${redirectTo !== '/' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-primary hover:underline font-medium">
             Sign up
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

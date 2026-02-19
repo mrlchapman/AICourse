@@ -24,6 +24,7 @@ import { InspectorPanel } from './inspector/inspector-panel';
 import { PreviewModal } from './preview/preview-modal';
 import { ThemeModal } from './theme/theme-modal';
 import { updateCourseContent } from '@/app/actions/courses';
+import { useToast } from '@/components/ui';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { buildScormCourse } from '@/lib/scorm/courseBuilder';
 import JSZip from 'jszip';
@@ -42,6 +43,7 @@ const DEFAULT_CONTENT: CourseContent = {
 
 export function EditorShell({ courseId, initialContent }: EditorShellProps) {
   const { content, setContent, undo, redo, canUndo, canRedo } = useUndoRedo(initialContent || DEFAULT_CONTENT);
+  const { showToast } = useToast();
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(
     initialContent?.sections?.[0]?.id ?? null
   );
@@ -60,10 +62,14 @@ export function EditorShell({ courseId, initialContent }: EditorShellProps) {
     if (savingRef.current) return;
     savingRef.current = true;
     setSaving(true);
-    await updateCourseContent(courseId, content);
+    const result = await updateCourseContent(courseId, content);
+    if (result?.error) {
+      console.error('Save failed:', result.error);
+      showToast(`Save failed: ${result.error}`, 'error');
+    }
     setSaving(false);
     savingRef.current = false;
-  }, [courseId, content]);
+  }, [courseId, content, showToast]);
 
   // SCORM export handler
   const [exporting, setExporting] = useState(false);

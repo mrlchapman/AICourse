@@ -6,6 +6,14 @@ import { Card, CardContent, Button, Badge, EmptyState } from '@/components/ui';
 export default async function MyCoursesPage() {
   const { enrollments, error } = await getEnrolledCourses();
 
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-500">Failed to load courses. Please try again later.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-8">

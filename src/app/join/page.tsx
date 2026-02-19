@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BookOpen, CheckCircle2 } from 'lucide-react';
+import { BookOpen, CheckCircle2, LogIn, UserPlus } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { joinCourse } from '@/app/actions/student';
+import { createClient } from '@/lib/supabase/client';
 
 function JoinPageContent() {
   const searchParams = useSearchParams();
@@ -15,6 +16,14 @@ function JoinPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setIsAuthenticated(!!user);
+    });
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +48,8 @@ function JoinPageContent() {
     setLoading(false);
   }
 
+  const joinRedirect = `/join${code ? `?code=${encodeURIComponent(code)}` : ''}`;
+
   return (
     <div className="min-h-screen bg-background-secondary flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -57,6 +68,44 @@ function JoinPageContent() {
               <h2 className="text-lg font-semibold text-foreground mb-1">Enrolled Successfully!</h2>
               <p className="text-sm text-foreground-muted">Redirecting to your course...</p>
             </div>
+          ) : isAuthenticated === false ? (
+            <>
+              <div className="space-y-4">
+                <Input
+                  placeholder="ENTER CODE"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.toUpperCase())}
+                  className="text-center text-2xl tracking-widest font-mono uppercase"
+                  maxLength={12}
+                  aria-label="Invite code"
+                  disabled
+                />
+
+                <p className="text-sm text-foreground-muted text-center">
+                  You need an account to join this course
+                </p>
+
+                <Link href={`/signup?role=student&redirect=${encodeURIComponent(joinRedirect)}`}>
+                  <Button className="w-full" type="button">
+                    <UserPlus className="h-4 w-4" />
+                    Create Student Account
+                  </Button>
+                </Link>
+
+                <Link href={`/login?redirect=${encodeURIComponent(joinRedirect)}`}>
+                  <Button variant="outline" className="w-full" type="button">
+                    <LogIn className="h-4 w-4" />
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="mt-6 text-center">
+                <Link href="/" className="text-sm text-foreground-muted hover:text-foreground">
+                  Back to Home
+                </Link>
+              </div>
+            </>
           ) : (
             <>
               <form onSubmit={handleSubmit} className="space-y-4" aria-label="Join course with invite code">
@@ -80,8 +129,8 @@ function JoinPageContent() {
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={code.length < 4}
-                  loading={loading}
+                  disabled={code.length < 4 || isAuthenticated === null}
+                  loading={loading || isAuthenticated === null}
                 >
                   Join Course
                 </Button>

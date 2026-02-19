@@ -130,6 +130,16 @@ export async function getCourse(courseId: string) {
   if (!user) return { error: 'Not authenticated' };
 
   const admin = getSupabaseAdmin();
+
+  // Get user profile to verify ownership
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
   const { data: course, error } = await (admin
     .from('courses') as any)
     .select('*')
@@ -137,6 +147,10 @@ export async function getCourse(courseId: string) {
     .single();
 
   if (error) return { error: error.message };
+  if (!course) return { error: 'Course not found' };
+
+  // Verify ownership
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
 
   return { success: true, course };
 }
@@ -168,7 +182,31 @@ export async function getUserCourses() {
 }
 
 export async function updateCourseContent(courseId: string, content: CourseContent) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Not authenticated' };
+
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Fetch course and verify ownership
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
 
   const { error } = await (admin
     .from('courses') as any)
@@ -209,7 +247,31 @@ export async function duplicateCourse(courseId: string) {
 }
 
 export async function deleteCourse(courseId: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { error: 'Not authenticated' };
+
   const admin = getSupabaseAdmin();
+
+  // Get user profile
+  const { data: profile } = await (admin
+    .from('users') as any)
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!profile) return { error: 'Profile not found' };
+
+  // Fetch course and verify ownership
+  const { data: course } = await (admin
+    .from('courses') as any)
+    .select('id, user_id')
+    .eq('id', courseId)
+    .single();
+
+  if (!course) return { error: 'Course not found' };
+  if (course.user_id !== profile.id) return { error: 'Not authorized' };
 
   const { error } = await (admin
     .from('courses') as any)

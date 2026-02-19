@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/lib/drive/auth';
 import { getSupabaseAdmin } from '@/lib/supabase/admin';
+import { createClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -10,6 +11,22 @@ export async function GET(request: Request) {
   if (!code || !state) {
     return NextResponse.redirect(
       new URL('/settings?error=missing_params', process.env.NEXT_PUBLIC_APP_URL!)
+    );
+  }
+
+  // Validate that the state (user_id) matches the authenticated user
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.redirect(
+      new URL('/login?error=not_authenticated', process.env.NEXT_PUBLIC_APP_URL!)
+    );
+  }
+
+  if (user.id !== state) {
+    return NextResponse.redirect(
+      new URL('/settings?error=state_mismatch', process.env.NEXT_PUBLIC_APP_URL!)
     );
   }
 
