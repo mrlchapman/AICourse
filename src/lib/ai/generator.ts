@@ -565,17 +565,63 @@ function enforceQuizzesLast(activities: any[]): any[] {
 
 function deduplicateGameTypes(sections: any[]): any[] {
   const usedGameTypes = new Set<string>();
-  return sections.map((section: any) => ({
-    ...section,
-    activities: section.activities.filter((activity: any) => {
-      if (activity.type === 'gamification') {
-        const gt = activity.gameType || 'memory_match';
-        if (usedGameTypes.has(gt)) return false;
-        usedGameTypes.add(gt);
+  return sections.map((section: any) => {
+    let sectionGamificationCount = 0;
+    return {
+      ...section,
+      activities: section.activities.filter((activity: any) => {
+        if (activity.type === 'gamification') {
+          // Max 1 gamification per section
+          sectionGamificationCount++;
+          if (sectionGamificationCount > 1) return false;
+          // No duplicate game types across course
+          const gt = activity.gameType || 'memory_match';
+          if (usedGameTypes.has(gt)) return false;
+          usedGameTypes.add(gt);
+        }
+        return true;
+      }),
+    };
+  });
+}
+
+export function ensureGamificationPerSection(sections: any[]): any[] {
+  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno'];
+
+  // Collect game types already used across all sections
+  const usedGameTypes = new Set<string>();
+  for (const section of sections) {
+    for (const act of section.activities || []) {
+      if (act.type === 'gamification' && act.gameType) {
+        usedGameTypes.add(act.gameType);
       }
-      return true;
-    }),
-  }));
+    }
+  }
+
+  for (const section of sections) {
+    const hasGamification = (section.activities || []).some((a: any) => a.type === 'gamification');
+    if (hasGamification) continue;
+
+    // Find an unused game type
+    const available = allGameTypes.filter((g) => !usedGameTypes.has(g));
+    if (available.length === 0) continue;
+
+    const gameType = available[0];
+    usedGameTypes.add(gameType);
+
+    const actIndex = section.activities?.length || 0;
+    section.activities = section.activities || [];
+    section.activities.push({
+      id: `act-gamification-${section.id}-${Date.now()}`,
+      type: 'gamification',
+      gameType,
+      order: actIndex,
+      editorLabel: `${gameType.replace(/_/g, ' ')} (needs content)`,
+      config: {},
+    });
+  }
+
+  return sections;
 }
 
 // ============================================
@@ -656,7 +702,7 @@ GAMIFICATION FORMATS:
 
 VARIETY RULES:
 - EVERY section MUST include at least 1 image activity
-- Include at least 2 gamification activities (different gameTypes)
+- EVERY section MUST include exactly 1 gamification activity (each with a DIFFERENT gameType)
 - NEVER use the same gameType more than once
 
 OUTPUT FORMAT:
@@ -716,6 +762,8 @@ ALSO: Identify any ambiguities (0-3 questions max).
 
 AVAILABLE ACTIVITY TYPES: ${activityTypes.join(', ')}
 
+IMPORTANT: Every section's suggestedActivityTypes MUST include "gamification".
+
 OUTPUT FORMAT (JSON):
 {
   "title": "${title}",
@@ -726,7 +774,7 @@ OUTPUT FORMAT (JSON):
       "title": "Section Title",
       "topics": ["Topic 1", "Topic 2", "Topic 3"],
       "estimatedActivities": 6,
-      "suggestedActivityTypes": ["text_content", "knowledge_check", "flashcard"]
+      "suggestedActivityTypes": ["text_content", "knowledge_check", "flashcard", "gamification"]
     }
   ],
   "suggestedQuestions": [
@@ -750,10 +798,19 @@ function buildSectionWithContextPrompt(
   context: SectionGenerationContext,
   options: GenerationOptions
 ): string {
+  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno'];
+  const usedGameTypes = context.usedGameTypes || [];
+  const availableGameTypes = allGameTypes.filter((g) => !usedGameTypes.includes(g));
+
   const activityTypes =
     sectionOutline.suggestedActivityTypes.length > 0
-      ? sectionOutline.suggestedActivityTypes
+      ? [...sectionOutline.suggestedActivityTypes]
       : options.activityTypes || ['text_content', 'knowledge_check', 'quiz', 'flashcard', 'accordion', 'info_panel', 'image', 'gamification', 'divider'];
+
+  // Always inject gamification if missing and game types are available
+  if (!activityTypes.includes('gamification') && availableGameTypes.length > 0) {
+    activityTypes.push('gamification');
+  }
 
   let userContext = '';
   if (context.userAnswers.length > 0) {
@@ -765,9 +822,6 @@ function buildSectionWithContextPrompt(
     previousContext = `\nPREVIOUS SECTIONS:\n${context.previousSectionTitles.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
   }
 
-  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno'];
-  const usedGameTypes = context.usedGameTypes || [];
-  const availableGameTypes = allGameTypes.filter((g) => !usedGameTypes.includes(g));
   let gamificationConstraint = '';
   if (usedGameTypes.length > 0) {
     gamificationConstraint = `\nGAMIFICATION CONSTRAINT: Already used: ${usedGameTypes.join(', ')}. Available: ${availableGameTypes.length > 0 ? availableGameTypes.join(', ') : 'NONE - do not include gamification'}`;
@@ -796,6 +850,7 @@ REQUIREMENTS:
 4. At least one image activity
 5. Dividers with clickToContinue: true after every 3 activities
 6. Quiz: MINIMUM 4 questions. Flashcard: MINIMUM 4 cards.
+7. MUST include exactly 1 gamification activity${availableGameTypes.length > 0 ? ` (use one of: ${availableGameTypes.join(', ')})` : ''}
 
 GAMIFICATION FORMATS (each gameType only ONCE per course):
 - memory_match: config.pairs [{id, item1, item2, info}] (4+ pairs)
@@ -914,6 +969,7 @@ function parseCourseResponse(response: string, fallbackTitle: string): CourseCon
 
     parsed.sections = deduplicateSectionIds(parsed.sections);
     parsed.sections = deduplicateGameTypes(parsed.sections);
+    parsed.sections = ensureGamificationPerSection(parsed.sections);
 
     return parsed as CourseContent;
   } catch (error) {

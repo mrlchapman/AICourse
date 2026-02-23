@@ -73,6 +73,55 @@ const MIN_WIDTH = 288;
 const DEFAULT_WIDTH = 320;
 const MAX_WIDTH = 640;
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function extractSectionText(courseContent: CourseContent | undefined, sectionId: string): string {
+  if (!courseContent) return '';
+  const section = courseContent.sections.find((s) => s.id === sectionId);
+  if (!section) return '';
+
+  const parts: string[] = [];
+  for (const act of section.activities) {
+    const a = act as any;
+    if (a.type === 'text_content' && a.content) parts.push(stripHtml(a.content));
+    if (a.type === 'info_panel') {
+      if (a.title) parts.push(a.title);
+      if (a.content) parts.push(stripHtml(a.content));
+    }
+    if (a.type === 'accordion' && a.sections) {
+      for (const s of a.sections) {
+        if (s.title) parts.push(s.title);
+        if (s.content) parts.push(stripHtml(s.content));
+      }
+    }
+    if (a.type === 'flashcard' && a.cards) {
+      for (const c of a.cards) {
+        if (c.front) parts.push(stripHtml(c.front));
+        if (c.back) parts.push(stripHtml(c.back));
+      }
+    }
+    if (a.type === 'tabs' && a.tabs) {
+      for (const t of a.tabs) {
+        if (t.label) parts.push(t.label);
+        if (t.content) parts.push(stripHtml(t.content));
+      }
+    }
+    if (a.type === 'quiz' && a.questions) {
+      for (const q of a.questions) {
+        if (q.text) parts.push(q.text);
+      }
+    }
+    if (a.type === 'knowledge_check') {
+      if (a.question) parts.push(a.question);
+    }
+  }
+
+  const text = parts.join('\n');
+  return text.length > 4000 ? text.substring(0, 4000) : text;
+}
+
 export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, onDelete, onDuplicate, onClose }: InspectorPanelProps) {
   const { icon, label } = getActivityDisplayInfo(activity);
   const [generating, setGenerating] = useState(false);
@@ -170,6 +219,59 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
     }
   };
 
+  const handleAIGenerateFromSection = async () => {
+    const sectionText = extractSectionText(courseContent, sectionId);
+    if (!sectionText.trim()) {
+      setGenError('No text content found in this section to use as context');
+      return;
+    }
+
+    setGenerating(true);
+    setGenError(null);
+
+    try {
+      const section = courseContent?.sections.find((s) => s.id === sectionId);
+      const courseContext = [
+        courseContent?.title ? `Course: ${courseContent.title}` : '',
+        courseContent?.description ? `Description: ${courseContent.description}` : '',
+        section?.title ? `Section: ${section.title}` : '',
+      ].filter(Boolean).join('\n');
+
+      const topicContext = `Generate based on the following section content:\n${sectionText}\n\n${courseContext}`;
+
+      const body: Record<string, unknown> = {
+        action: 'generate_activity',
+        text: topicContext,
+        activityType: activity.type,
+      };
+
+      if (activity.type === 'gamification') {
+        body.subType = (activity as any).gameType;
+      }
+
+      const res = await fetch('/api/ai/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Generation failed');
+      }
+
+      const data = await res.json();
+      if (data.activity) {
+        const { id, type, order, editorLabel, ...generated } = data.activity;
+        onUpdate(generated);
+      }
+    } catch (e: any) {
+      setGenError(e.message || 'AI generation failed');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const handleSaveTemplate = async () => {
     if (!templateName.trim()) return;
     setSavingTemplate(true);
@@ -247,34 +349,50 @@ export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, o
       {/* Actions */}
       <div className="p-3 border-t border-border space-y-2">
         {canGenerate && (
-          <div className="flex items-end gap-1.5">
-            <div className="flex-1 min-w-0">
-              <Input
-                value={aiTopic}
-                onChange={(e) => setAiTopic(e.target.value)}
-                placeholder="Topic, e.g. photosynthesis"
-                className="text-xs"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !generating) handleAIGenerate();
-                }}
-                label="AI Topic"
-              />
+          <>
+            <div className="flex items-end gap-1.5">
+              <div className="flex-1 min-w-0">
+                <Input
+                  value={aiTopic}
+                  onChange={(e) => setAiTopic(e.target.value)}
+                  placeholder="Topic, e.g. photosynthesis"
+                  className="text-xs"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !generating) handleAIGenerate();
+                  }}
+                  label="AI Topic"
+                />
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 px-2 h-10"
+                onClick={handleAIGenerate}
+                disabled={generating}
+                title="AI Generate"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              className="shrink-0 px-2 h-10"
-              onClick={handleAIGenerate}
+              className="w-full justify-start gap-2 text-xs"
+              onClick={handleAIGenerateFromSection}
               disabled={generating}
-              title="AI Generate"
             >
               {generating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
-                <Sparkles className="h-4 w-4" />
+                <Sparkles className="h-3.5 w-3.5" />
               )}
+              Use section content
             </Button>
-          </div>
+          </>
         )}
         <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={onDuplicate}>
           <Copy className="h-4 w-4" />

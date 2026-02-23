@@ -20,6 +20,7 @@ import type {
   AIQuestionAnswer,
   SectionOutline,
 } from '@/types/activities';
+import { ensureGamificationPerSection } from '@/lib/ai/generator';
 
 interface GenerationStepProps {
   mode: 'quick' | 'progressive';
@@ -211,10 +212,12 @@ export function GenerationStep({
     setIsGenerating(false);
 
     if (sections.length > 0) {
+      // Ensure every section has a gamification activity (safety net)
+      const ensuredSections = ensureGamificationPerSection(sections);
       const content: CourseContent = {
         title,
         description: outline.description,
-        sections,
+        sections: ensuredSections,
       };
       setFinalContent(content);
     } else {
