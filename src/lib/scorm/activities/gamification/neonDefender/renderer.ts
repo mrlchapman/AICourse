@@ -1,5 +1,5 @@
 /**
- * Synth Defender Renderer
+ * Space Invaders Renderer
  * Generates HTML using the selected theme
  */
 
@@ -8,7 +8,7 @@ import { extractConfig, generateGameScript } from './engine';
 import { synthwaveTheme } from './styles';
 
 /**
- * Renders the Synth Defender game HTML
+ * Renders the Space Invaders game HTML
  * @param activity - The gamification activity
  * @param theme - Optional theme override (defaults to synthwaveTheme)
  */

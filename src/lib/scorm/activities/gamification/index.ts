@@ -24,6 +24,7 @@ import { renderTheChase } from './theChase/index';
 import { renderQuizUno } from './quizUno/index';
 import { renderKnowledgeTetris } from './knowledgeTetris/index';
 import { renderWordSearch } from './wordSearch/index';
+import { renderJeopardy } from './jeopardy/index';
 
 // Re-export core utilities for theme development
 export * from './core';
@@ -37,10 +38,15 @@ export * from './millionaire/index';
 export * from './quizUno/index';
 export * from './knowledgeTetris/index';
 export * from './wordSearch/index';
+export { renderJeopardy, renderJeopardyWithTheme, POINT_VALUES } from './jeopardy/index';
+export type { JeopardyConfig, JeopardyCategory as JeopardyGameCategory, JeopardyClue as JeopardyGameClue, FinalJeopardyData as FinalJeopardyGameData } from './jeopardy/index';
+export { classicTvTheme as jeopardyClassicTvTheme } from './jeopardy/styles';
 
 // Export theme files for customization
 export { psiLabTheme } from './memoryMatch/styles';
+export { modernTheme } from './memoryMatch/styles';
 export { synthwaveTheme } from './neonDefender/styles';
+export { spaceInvadersTheme } from './neonDefender/styles';
 export { coldWarTheme } from './battleships/styles';
 export { cardGameTheme } from './quizUno/styles';
 export { arcadeTheme } from './knowledgeTetris/styles';
@@ -58,7 +64,8 @@ export type GameType =
   | 'word_search'
   | 'battleships'
   | 'millionaire'
-  | 'the_chase';
+  | 'the_chase'
+  | 'jeopardy';
 
 /**
  * Render a gamification activity
@@ -89,6 +96,9 @@ export function renderGamification(activity: Extract<Activity, { type: 'gamifica
     case 'the_chase':
       return renderTheChase(activity);
 
+    case 'jeopardy':
+      return renderJeopardy(activity);
+
     case 'memory_match':
     default:
       return renderMemoryMatch(activity);
@@ -108,5 +118,6 @@ export function getAvailableGameTypes(): GameType[] {
     'battleships',
     'millionaire',
     'the_chase',
+    'jeopardy',
   ];
 }

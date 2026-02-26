@@ -5,6 +5,7 @@ import { X, Trash2, Sparkles, Copy, Loader2, PanelRightClose, PanelRightOpen, Ma
 import { Button, Input, Textarea } from '@/components/ui';
 import { saveTemplate } from '@/app/actions/templates';
 import { getActivityDisplayInfo, ACTIVITY_CONFIG, type Activity, type CourseContent } from '@/types/activities';
+import { extractSectionText as extractSectionTextShared } from '@/lib/scorm/extractSectionText';
 import { TextContentEditor } from './editors/text-content-editor';
 import { ImageEditor } from './editors/image-editor';
 import { KnowledgeCheckEditor } from './editors/knowledge-check-editor';
@@ -73,53 +74,11 @@ const MIN_WIDTH = 288;
 const DEFAULT_WIDTH = 320;
 const MAX_WIDTH = 640;
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-}
-
 function extractSectionText(courseContent: CourseContent | undefined, sectionId: string): string {
   if (!courseContent) return '';
   const section = courseContent.sections.find((s) => s.id === sectionId);
   if (!section) return '';
-
-  const parts: string[] = [];
-  for (const act of section.activities) {
-    const a = act as any;
-    if (a.type === 'text_content' && a.content) parts.push(stripHtml(a.content));
-    if (a.type === 'info_panel') {
-      if (a.title) parts.push(a.title);
-      if (a.content) parts.push(stripHtml(a.content));
-    }
-    if (a.type === 'accordion' && a.sections) {
-      for (const s of a.sections) {
-        if (s.title) parts.push(s.title);
-        if (s.content) parts.push(stripHtml(s.content));
-      }
-    }
-    if (a.type === 'flashcard' && a.cards) {
-      for (const c of a.cards) {
-        if (c.front) parts.push(stripHtml(c.front));
-        if (c.back) parts.push(stripHtml(c.back));
-      }
-    }
-    if (a.type === 'tabs' && a.tabs) {
-      for (const t of a.tabs) {
-        if (t.label) parts.push(t.label);
-        if (t.content) parts.push(stripHtml(t.content));
-      }
-    }
-    if (a.type === 'quiz' && a.questions) {
-      for (const q of a.questions) {
-        if (q.text) parts.push(q.text);
-      }
-    }
-    if (a.type === 'knowledge_check') {
-      if (a.question) parts.push(a.question);
-    }
-  }
-
-  const text = parts.join('\n');
-  return text.length > 4000 ? text.substring(0, 4000) : text;
+  return extractSectionTextShared(section.activities);
 }
 
 export function InspectorPanel({ activity, sectionId, courseContent, onUpdate, onDelete, onDuplicate, onClose }: InspectorPanelProps) {

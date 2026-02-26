@@ -77,7 +77,9 @@ export interface InfographicActivity extends BaseActivity {
 export interface VideoActivity extends BaseActivity {
   type: 'video';
   src: string;
+  title?: string;
   caption?: string;
+  required?: boolean;
 }
 
 export interface YouTubeActivity extends BaseActivity {
@@ -173,6 +175,7 @@ export interface DocumentViewerActivity extends BaseActivity {
   type: 'document_viewer';
   documentUrl: string;
   title?: string;
+  required?: boolean;
 }
 
 export interface PDFActivity extends BaseActivity {
@@ -213,9 +216,10 @@ export interface QuizActivity extends BaseActivity {
 
 export interface GamificationActivity extends BaseActivity {
   type: 'gamification';
-  gameType: 'memory_match' | 'neon_defender' | 'knowledge_tetris' | 'quiz_uno' | 'word_search' | 'battleships' | 'millionaire' | 'the_chase';
+  gameType: 'memory_match' | 'neon_defender' | 'knowledge_tetris' | 'quiz_uno' | 'word_search' | 'battleships' | 'millionaire' | 'the_chase' | 'jeopardy';
   config: {
     required?: boolean;
+    themeId?: string;
     penaltyShuffle?: boolean;
     pairs?: {
       id: string;
@@ -269,6 +273,7 @@ export interface GamificationActivity extends BaseActivity {
       correctIndex: number;
     }[];
     timerSeconds?: 15 | 30 | 45 | 60;
+    questionCount?: 10 | 15;
     chaseQuestions?: {
       id: string;
       question: string;
@@ -280,6 +285,30 @@ export interface GamificationActivity extends BaseActivity {
     chaserAccuracy?: 60 | 70 | 80 | 90;
     headStart?: 1 | 2 | 3;
     boardSize?: 5 | 7 | 9;
+    // Jeopardy Config
+    categoryCount?: 4 | 6;
+    jeopardyCategories?: {
+      name: string;
+      clues: {
+        id: string;
+        pointValue: number;
+        answer: string;
+        question: string;
+        options: string[];
+        correctIndex: number;
+        explanation: string;
+        isDailyDouble?: boolean;
+      }[];
+    }[];
+    jeopardyTimerSeconds?: 15 | 20 | 30;
+    finalJeopardy?: {
+      category: string;
+      answer: string;
+      question: string;
+      options: string[];
+      correctIndex: number;
+      explanation: string;
+    };
   };
 }
 

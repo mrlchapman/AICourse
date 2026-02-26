@@ -77,7 +77,9 @@ export interface InfographicActivity extends BaseActivity {
 export interface VideoActivity extends BaseActivity {
   type: 'video';
   src: string;
+  title?: string;
   caption?: string;
+  required?: boolean;
 }
 
 export interface YouTubeActivity extends BaseActivity {
@@ -196,6 +198,7 @@ export interface DocumentViewerActivity extends BaseActivity {
   type: 'document_viewer';
   documentUrl: string;
   title?: string;
+  required?: boolean;
 }
 
 export interface PDFActivity extends BaseActivity {
@@ -251,10 +254,11 @@ export interface QuizActivity extends BaseActivity {
 
 export interface GamificationActivity extends BaseActivity {
   type: 'gamification';
-  gameType: 'memory_match' | 'neon_defender' | 'knowledge_tetris' | 'quiz_uno' | 'word_search' | 'battleships' | 'millionaire' | 'the_chase'; // extensible for later
+  gameType: 'memory_match' | 'neon_defender' | 'knowledge_tetris' | 'quiz_uno' | 'word_search' | 'battleships' | 'millionaire' | 'the_chase' | 'jeopardy'; // extensible for later
   config: {
     // Common
     required?: boolean;
+    themeId?: string;
 
     // Memory Match Config
     penaltyShuffle?: boolean;
@@ -265,7 +269,7 @@ export interface GamificationActivity extends BaseActivity {
       info: string; // content to show on match
     }[];
 
-    // Synth Defender Config
+    // Space Invaders Config
     questions?: {
       id: string;
       question: string;
@@ -322,6 +326,7 @@ export interface GamificationActivity extends BaseActivity {
       correctIndex: number;
     }[];
     timerSeconds?: 15 | 30 | 45 | 60;  // Time per question (0 = off)
+    questionCount?: 10 | 15; // Number of questions (10 or 15)
 
     // The Chase Config
     chaseQuestions?: {
@@ -335,6 +340,31 @@ export interface GamificationActivity extends BaseActivity {
     chaserAccuracy?: 60 | 70 | 80 | 90;  // How often the chaser gets it right
     headStart?: 1 | 2 | 3;  // Player's head start on the ladder
     boardSize?: 5 | 7 | 9;  // Total ladder steps
+
+    // Jeopardy Config
+    categoryCount?: 4 | 6;
+    jeopardyCategories?: {
+      name: string;
+      clues: {
+        id: string;
+        pointValue: number;
+        answer: string;
+        question: string;
+        options: string[];
+        correctIndex: number;
+        explanation: string;
+        isDailyDouble?: boolean;
+      }[];
+    }[];
+    jeopardyTimerSeconds?: 15 | 20 | 30;
+    finalJeopardy?: {
+      category: string;
+      answer: string;
+      question: string;
+      options: string[];
+      correctIndex: number;
+      explanation: string;
+    };
   };
 }
 

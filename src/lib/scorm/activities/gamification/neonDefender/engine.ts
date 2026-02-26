@@ -1,12 +1,12 @@
 /**
- * Synth Defender Game Engine
+ * Space Invaders Game Engine
  * Pure game logic separated from rendering
  * This can be used with any theme/style
  */
 
 import { GamificationActivity, safeJsonEmbed } from '../core/types';
 
-/** Configuration for Synth Defender game */
+/** Configuration for Space Invaders game */
 export interface NeonDefenderConfig {
   questions: NeonDefenderQuestion[];
   required: boolean;
@@ -14,7 +14,7 @@ export interface NeonDefenderConfig {
   passMarkPercent: number;
 }
 
-/** A question in the Synth Defender game */
+/** A question in the Space Invaders game */
 export interface NeonDefenderQuestion {
   id: string;
   question: string;

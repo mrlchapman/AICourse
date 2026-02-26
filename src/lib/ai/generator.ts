@@ -524,6 +524,34 @@ function normalizeGamificationActivity(activity: any): void {
       return q.answers && q.answers.length >= 2;
     });
   }
+
+  // Jeopardy validation
+  if (gameType === 'jeopardy') {
+    // AI sometimes puts categories at root instead of config
+    if (!activity.config.jeopardyCategories && activity.jeopardyCategories) {
+      activity.config.jeopardyCategories = activity.jeopardyCategories;
+      delete activity.jeopardyCategories;
+    }
+    if (!activity.config.jeopardyCategories && activity.config.categories) {
+      activity.config.jeopardyCategories = activity.config.categories;
+      delete activity.config.categories;
+    }
+    if (activity.config.jeopardyCategories && Array.isArray(activity.config.jeopardyCategories)) {
+      activity.config.jeopardyCategories = activity.config.jeopardyCategories.map((cat: any) => ({
+        name: cat.name || cat.category || 'Category',
+        clues: (cat.clues || []).map((c: any, ci: number) => ({
+          id: c.id || `jc-${ci}`,
+          pointValue: c.pointValue || [200, 400, 600, 800, 1000][ci] || 200,
+          answer: c.answer || c.clue || '',
+          question: c.question || c.response || '',
+          options: Array.isArray(c.options) ? c.options.map((o: any) => typeof o === 'string' ? o : o.text || '') : [],
+          correctIndex: typeof c.correctIndex === 'number' ? c.correctIndex : 0,
+          explanation: c.explanation || '',
+          isDailyDouble: c.isDailyDouble || false,
+        })),
+      }));
+    }
+  }
 }
 
 function filterMinimumRequirements(activities: any[]): any[] {
@@ -586,7 +614,7 @@ function deduplicateGameTypes(sections: any[]): any[] {
 }
 
 export function ensureGamificationPerSection(sections: any[]): any[] {
-  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno'];
+  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno', 'jeopardy'];
 
   // Collect game types already used across all sections
   const usedGameTypes = new Set<string>();
@@ -683,7 +711,7 @@ ACTIVITY FORMATS:
 3. quiz: 4+ questions, test application not just recall
 4. flashcard: 4+ cards (each needs id, front, back)
 5. accordion: 3+ sections (each needs id, title, content)
-6. gamification: gameTypes: "memory_match", "neon_defender", "battleships", "millionaire", "the_chase", "word_search", "knowledge_tetris", "quiz_uno" - each can only be used ONCE
+6. gamification: gameTypes: "memory_match", "neon_defender", "battleships", "millionaire", "the_chase", "word_search", "knowledge_tetris", "quiz_uno", "jeopardy" - each can only be used ONCE
 7. info_panel: title and content, use for tips/warnings
 8. image: Include imageQuery (stock photo search) and geminiPrompt (AI image generation prompt)
 9. infographic: Include infographicPrompt (detailed AI infographic generation prompt), alt, title
@@ -699,6 +727,7 @@ GAMIFICATION FORMATS:
 - word_search: config.wordSearchWords [{id, word, question, explanation, answers, correctIndex}]
 - knowledge_tetris: config.questions [{id, question, explanation, answers, correctIndex}]
 - quiz_uno: config.unoQuestions [{id, question, explanation, answers, correctIndex}]
+- jeopardy: config.jeopardyCategories [{name, clues: [{id, pointValue (200/400/600/800/1000), answer, question, options, correctIndex, explanation}]}] - 4 categories, 5 clues each
 
 VARIETY RULES:
 - EVERY section MUST include at least 1 image activity
@@ -798,7 +827,7 @@ function buildSectionWithContextPrompt(
   context: SectionGenerationContext,
   options: GenerationOptions
 ): string {
-  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno'];
+  const allGameTypes = ['memory_match', 'neon_defender', 'battleships', 'millionaire', 'the_chase', 'word_search', 'knowledge_tetris', 'quiz_uno', 'jeopardy'];
   const usedGameTypes = context.usedGameTypes || [];
   const availableGameTypes = allGameTypes.filter((g) => !usedGameTypes.includes(g));
 
@@ -914,6 +943,7 @@ function buildActivityGenerationPrompt(
         word_search: `gameType: "word_search", config: { gridSize: 12, wordSearchWords: [{id, word: "SINGLE WORD", question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 8 words`,
         knowledge_tetris: `gameType: "knowledge_tetris", config: { questions: [{id, question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 6 questions`,
         quiz_uno: `gameType: "quiz_uno", config: { startingCards: 5, unoQuestions: [{id, question, explanation, answers: ["A","B","C","D"], correctIndex: 0}] } — MINIMUM 6 questions`,
+        jeopardy: `gameType: "jeopardy", config: { jeopardyCategories: [{name: "Category Name", clues: [{id, pointValue: 200, answer: "This is the answer (Jeopardy-style clue)", question: "What is...?", options: ["A","B","C","D"], correctIndex: 0, explanation: "..."}]}] } — EXACTLY 4 categories, 5 clues per category (pointValues: 200, 400, 600, 800, 1000)`,
       };
       specificInstructions = `Create a ${gt} game.\n\nEXACT SCHEMA REQUIRED:\n${schemaMap[gt] || schemaMap.memory_match}\n\nThe JSON must include: type: "gamification", gameType: "${gt}", and config with the fields above.`;
       break;
@@ -964,6 +994,13 @@ function parseCourseResponse(response: string, fallbackTitle: string): CourseCon
       if (!section.activities) section.activities = [];
       section.activities = normalizeActivities(section.activities);
       section.activities = filterMinimumRequirements(section.activities);
+      // Strip trailing clickToContinue dividers (they create empty pages)
+      while (section.activities.length > 0) {
+        const last = section.activities[section.activities.length - 1];
+        if (last.type === 'divider' && last.clickToContinue === true) {
+          section.activities.pop();
+        } else break;
+      }
       section.activities = enforceQuizzesLast(section.activities);
     });
 
@@ -1061,6 +1098,14 @@ function parseSectionWithContextResponse(
       paginatedStartLabel: sectionData.paginatedStartLabel,
       activities: normalizeActivities(sectionData.activities || []),
     };
+
+    // Strip trailing clickToContinue dividers (they create empty pages)
+    while (section.activities.length > 0) {
+      const last = section.activities[section.activities.length - 1];
+      if (last.type === 'divider' && (last as any).clickToContinue === true) {
+        section.activities.pop();
+      } else break;
+    }
 
     let suggestedQuestion: AIQuestion | undefined;
     if (parsed.suggestedQuestion?.question) {

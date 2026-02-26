@@ -38,6 +38,7 @@ const GAME_TYPES = [
   { value: 'battleships', label: 'Battleships', desc: 'Sink ships by answering correctly', icon: Ship, color: 'text-slate-600 bg-slate-100' },
   { value: 'millionaire', label: 'Millionaire', desc: 'Progressive difficulty quiz show', icon: Trophy, color: 'text-amber-600 bg-amber-100' },
   { value: 'the_chase', label: 'The Chase', desc: 'Race against a chaser with questions', icon: Zap, color: 'text-orange-600 bg-orange-100' },
+  { value: 'jeopardy', label: 'Jeopardy', desc: 'Category-based quiz board game', icon: Grid3X3, color: 'text-blue-700 bg-blue-100' },
 ] as const;
 
 type QuestionItem = {
@@ -74,6 +75,7 @@ export function GamificationEditor({ activity, onUpdate }: Props) {
       case 'battleships': return 'battleshipsQuestions';
       case 'millionaire': return 'millionaireQuestions';
       case 'the_chase': return 'chaseQuestions';
+      case 'jeopardy': return 'jeopardyCategories';
       default: return 'questions';
     }
   };
@@ -458,15 +460,63 @@ export function GamificationEditor({ activity, onUpdate }: Props) {
           )}
 
           {gameType === 'millionaire' && (
+            <>
+              <SettingSelect
+                label="Questions"
+                value={config.questionCount || 15}
+                onChange={(v) => updateConfig({ questionCount: v })}
+                options={[
+                  { value: 10, label: '10 questions' },
+                  { value: 15, label: '15 questions' },
+                ]}
+              />
+              <SettingSelect
+                label="Timer"
+                value={config.timerSeconds || 30}
+                onChange={(v) => updateConfig({ timerSeconds: v })}
+                options={[
+                  { value: 15, label: '15 seconds' },
+                  { value: 30, label: '30 seconds' },
+                  { value: 45, label: '45 seconds' },
+                  { value: 60, label: '60 seconds' },
+                ]}
+              />
+            </>
+          )}
+
+          {gameType === 'memory_match' && (
+            <SettingSelect
+              label="Theme"
+              value={config.themeId || 'modern'}
+              onChange={(v) => updateConfig({ themeId: v })}
+              options={[
+                { value: 'modern', label: 'Modern' },
+                { value: 'psi-lab', label: 'PSI Lab' },
+              ]}
+            />
+          )}
+
+          {gameType === 'neon_defender' && (
+            <SettingSelect
+              label="Theme"
+              value={config.themeId || 'space-invaders'}
+              onChange={(v) => updateConfig({ themeId: v })}
+              options={[
+                { value: 'space-invaders', label: 'Space Invaders' },
+                { value: 'synthwave', label: 'Synthwave' },
+              ]}
+            />
+          )}
+
+          {gameType === 'jeopardy' && (
             <SettingSelect
               label="Timer"
-              value={config.timerSeconds || 30}
-              onChange={(v) => updateConfig({ timerSeconds: v })}
+              value={config.jeopardyTimerSeconds || 20}
+              onChange={(v) => updateConfig({ jeopardyTimerSeconds: v })}
               options={[
                 { value: 15, label: '15 seconds' },
+                { value: 20, label: '20 seconds' },
                 { value: 30, label: '30 seconds' },
-                { value: 45, label: '45 seconds' },
-                { value: 60, label: '60 seconds' },
               ]}
             />
           )}
@@ -540,16 +590,17 @@ function SettingSelect({
   options,
 }: {
   label: string;
-  value: number;
-  onChange: (value: number) => void;
-  options: { value: number; label: string }[];
+  value: string | number;
+  onChange: (value: any) => void;
+  options: { value: string | number; label: string }[];
 }) {
+  const isNumeric = typeof options[0]?.value === 'number';
   return (
     <div className="flex items-center justify-between gap-3">
       <label className="text-xs text-foreground-muted shrink-0">{label}</label>
       <select
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
+        onChange={(e) => onChange(isNumeric ? parseInt(e.target.value) : e.target.value)}
         className="text-xs px-2 py-1 border border-border rounded-md bg-surface outline-none focus:ring-1 focus:ring-primary min-w-[100px]"
       >
         {options.map((opt) => (

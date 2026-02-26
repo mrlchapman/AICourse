@@ -23,28 +23,41 @@ export interface MillionaireQuestion {
   explanation?: string;
 }
 
-/** Prize ladder for the game */
-export const PRIZE_LADDER = [
+/** Prize ladders for the game */
+export const PRIZE_LADDER_15 = [
   '\u00A3100', '\u00A3200', '\u00A3300', '\u00A3500', '\u00A31,000',
   '\u00A32,000', '\u00A34,000', '\u00A38,000', '\u00A316,000', '\u00A332,000',
   '\u00A364,000', '\u00A3125,000', '\u00A3250,000', '\u00A3500,000', '\u00A31 MILLION'
 ];
+export const PRIZE_LADDER_10 = [
+  '\u00A3100', '\u00A3500', '\u00A31,000',
+  '\u00A32,000', '\u00A34,000',
+  '\u00A38,000', '\u00A316,000', '\u00A364,000',
+  '\u00A3250,000', '\u00A31 MILLION'
+];
 
-/** Safe points in the ladder (0-indexed) - Q5 and Q10 */
-export const SAFE_POINTS = [4, 9];
+/** Safe points in the ladder (0-indexed) */
+export const SAFE_POINTS_15 = [4, 9];
+export const SAFE_POINTS_10 = [2, 6];
+
+/** Default export for backward compatibility */
+export const PRIZE_LADDER = PRIZE_LADDER_15;
+export const SAFE_POINTS = SAFE_POINTS_15;
 
 /**
  * Extracts game configuration from activity
  */
-export function extractConfig(activity: GamificationActivity): MillionaireConfig {
+export function extractConfig(activity: GamificationActivity): MillionaireConfig & { questionCount: 10 | 15 } {
   // AI sometimes puts questions under "questions" instead of "millionaireQuestions"
   const questions = activity.config?.millionaireQuestions
     || activity.config?.questions
     || [];
+  const questionCount = (activity.config as any)?.questionCount === 10 ? 10 : 15;
   return {
     questions: (questions as MillionaireQuestion[]).filter((q: any) => q && q.question && Array.isArray(q.answers) && q.answers.length >= 2),
     timerSeconds: activity.config?.timerSeconds || 30,
     required: activity.config?.required || false,
+    questionCount,
   };
 }
 
@@ -59,6 +72,9 @@ export function generateGameScript(
   classPrefix: string
 ): string {
   const questionsJson = safeJsonEmbed(config.questions);
+  const qCount = (config as any).questionCount || 15;
+  const ladder = qCount === 10 ? PRIZE_LADDER_10 : PRIZE_LADDER_15;
+  const safePoints = qCount === 10 ? SAFE_POINTS_10 : SAFE_POINTS_15;
 
   return `
     <!-- Store questions data safely -->
@@ -71,8 +87,8 @@ export function generateGameScript(
         // Safely parse questions from JSON data element
         const questionsEl = document.getElementById('questions-data-' + gameId);
         const QUESTIONS = questionsEl ? JSON.parse(questionsEl.textContent || '[]') : [];
-        const LADDER = ${JSON.stringify(PRIZE_LADDER)};
-        const SAFE_POINTS = ${JSON.stringify(SAFE_POINTS)};
+        const LADDER = ${JSON.stringify(ladder)};
+        const SAFE_POINTS = ${JSON.stringify(safePoints)};
         const TIME_PER_Q = ${config.timerSeconds};
 
         // State
@@ -292,7 +308,7 @@ export function generateGameScript(
         }
 
         function updateHUD() {
-            document.getElementById('banked-' + gameId).innerText = 'Banked: ' + safePrize;
+            document.getElementById('banked-' + gameId).innerText = 'Won: ' + safePrize;
             document.getElementById('playing-' + gameId).innerText = 'Playing for: ' + (LADDER[qIdx] || 'MAX');
 
             const toggle = document.getElementById('timer-toggle-' + gameId);

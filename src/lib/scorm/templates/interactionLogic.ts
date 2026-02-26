@@ -786,7 +786,11 @@ export const INTERACTION_LOGIC_JS = `
     const selected = activityEl.querySelector('input[name="kc-' + activityId + '"]:checked');
 
     if (!selected) {
-      alert('Please select an answer');
+      window.showCourseToast('warning', 'No Answer Selected', 'Please select an answer before submitting.', 3000);
+      // Visual hint: briefly outline the options
+      var opts = activityEl.querySelectorAll('.kc-option');
+      opts.forEach(function(o) { o.style.outline = '2px solid #f59e0b'; });
+      setTimeout(function() { opts.forEach(function(o) { o.style.outline = ''; }); }, 2000);
       return;
     }
 
@@ -1580,7 +1584,7 @@ export const INTERACTION_LOGIC_JS = `
 
     var targetProgress = window.sectionProgress[sectionIndex];
     if (!targetProgress.unlocked && !targetProgress.completed) {
-      alert('This section is locked. Complete previous sections first.');
+      window.showCourseToast('warning', 'Section Locked', 'Complete previous sections first.', 4000);
       return;
     }
 

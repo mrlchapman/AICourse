@@ -67,6 +67,16 @@ function renderSection(section: CourseSection, isLastSection: boolean = false, h
     .filter(a => a && a.type)
     .sort((a, b) => a.order - b.order);
 
+  // Strip trailing clickToContinue dividers (they create empty pages)
+  while (sortedActivities.length > 0) {
+    const last = sortedActivities[sortedActivities.length - 1];
+    if (last.type === 'divider' && (last as any).clickToContinue === true) {
+      sortedActivities.pop();
+    } else {
+      break;
+    }
+  }
+
   const lastActivity = sortedActivities[sortedActivities.length - 1];
   const endsWithPageBreak = lastActivity &&
     lastActivity.type === 'divider' &&

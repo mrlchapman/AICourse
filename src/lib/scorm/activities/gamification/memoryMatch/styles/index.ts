@@ -4,8 +4,4 @@
  */
 
 export { psiLabTheme } from './psiLab';
-
-// Future themes can be added here:
-// export { classicTheme } from './classic';
-// export { neonTheme } from './neon';
-// export { minimalTheme } from './minimal';
+export { modernTheme } from './modern';

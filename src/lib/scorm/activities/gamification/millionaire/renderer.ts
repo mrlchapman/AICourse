@@ -20,7 +20,8 @@ export function renderMillionaireWithTheme(
   const config = extractConfig(activity);
   const prefix = theme.classPrefix;
 
-  const html = generateHTML(ctx.activityId, ctx.uniqueId, config, prefix, ctx.trackingClass);
+  const qCount = (config as any).questionCount || 15;
+  const html = generateHTML(ctx.activityId, ctx.uniqueId, { ...config, questionCount: qCount }, prefix, ctx.trackingClass);
   const script = generateGameScript(ctx.activityId, ctx.uniqueId, config, prefix);
   const styles = `<style>${theme.css}</style>`;
 
@@ -33,10 +34,12 @@ export function renderMillionaireWithTheme(
 function generateHTML(
   gameId: string,
   uniqueId: string,
-  config: { timerSeconds: number; required: boolean },
+  config: { timerSeconds: number; required: boolean; questionCount?: number },
   prefix: string,
   trackingClass: string
 ): string {
+  const qCount = config.questionCount || 15;
+  const safePointsText = qCount === 10 ? 'Q3 and Q7' : 'Q5 and Q10';
   return `
     <div class="activity millionaire-activity ${trackingClass}" id="activity-${gameId}">
         <div class="${prefix}-container" id="game-${gameId}">
@@ -50,10 +53,10 @@ function generateHTML(
             <div class="${prefix}-start active" id="start-${gameId}">
                 <div class="${prefix}-start-content">
                     <h1 class="${prefix}-logo">WHO WANTS TO BE A<br><span>MILLIONAIRE?</span></h1>
-                    <p class="${prefix}-tagline">Answer 15 questions to win the ultimate prize!</p>
+                    <p class="${prefix}-tagline">Answer ${qCount} questions to win the ultimate prize!</p>
                     <div class="${prefix}-rules">
                         <div class="${prefix}-rule"><span class="${prefix}-rule-icon">\uD83D\uDCB0</span> Each correct answer increases your prize</div>
-                        <div class="${prefix}-rule"><span class="${prefix}-rule-icon">\uD83D\uDEE1\uFE0F</span> Safe points at Q5 and Q10 lock in winnings</div>
+                        <div class="${prefix}-rule"><span class="${prefix}-rule-icon">\uD83D\uDEE1\uFE0F</span> Safe points at ${safePointsText} lock in winnings</div>
                         <div class="${prefix}-rule"><span class="${prefix}-rule-icon">\uD83C\uDFAF</span> Use lifelines wisely - you only get 3!</div>
                         <div class="${prefix}-rule"><span class="${prefix}-rule-icon">\uD83D\uDEB6</span> Walk away anytime to keep your prize</div>
                     </div>
@@ -72,8 +75,8 @@ function generateHTML(
                         <!-- HUD -->
                         <div class="${prefix}-hud">
                             <div class="${prefix}-hud-info">
-                                <div class="${prefix}-banked" id="banked-${gameId}">Banked: \u00A30</div>
-                                <div class="${prefix}-playing" id="playing-${gameId}">Playing for: \u00A3100</div>
+                                <div class="${prefix}-banked" id="banked-${gameId}">Won: \u00A30</div>
+                                <div class="${prefix}-playing" id="playing-${gameId}">Playing for: ${qCount === 10 ? '\u00A3100' : '\u00A3100'}</div>
                             </div>
                             <div class="${prefix}-timer-wrap">
                                 <div class="${prefix}-timer-bar" id="timer-bar-${gameId}"></div>

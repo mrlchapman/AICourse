@@ -1,6 +1,6 @@
 /**
  * Card Game Theme for Quiz Uno
- * An elegant art deco casino aesthetic - "Carte Royale"
+ * An elegant art deco casino aesthetic - "Uno"
  */
 
 import { GameTheme } from '../../core/types';
@@ -8,7 +8,7 @@ import { fontImports } from '../../core/styles/base';
 
 export const cardGameTheme: GameTheme = {
   id: 'card-game',
-  name: 'Carte Royale',
+  name: 'Uno',
   classPrefix: 'carte',
   css: `
     @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Josefin+Sans:wght@300;400;500;600&display=swap');

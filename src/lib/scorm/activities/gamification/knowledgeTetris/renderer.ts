@@ -57,7 +57,7 @@ function generateHTML(
             <!-- Header -->
             <div class="${prefix}-header">
                 <div class="${prefix}-title-group">
-                    <div class="${prefix}-title">БЛОК</div>
+                    <div class="${prefix}-title">TETRIS</div>
                     <div class="${prefix}-subtitle">KNOWLEDGE BUILDER</div>
                 </div>
                 ${config.required ? `<div class="${prefix}-required">◆ MANDATORY ◆</div>` : ''}
@@ -135,7 +135,7 @@ function generateHTML(
                             <span>▀</span><span>▄</span><span>█</span><span>▀</span>
                         </div>
                     </div>
-                    <div class="${prefix}-start-title">БЛОК</div>
+                    <div class="${prefix}-start-title">TETRIS</div>
                     <div class="${prefix}-start-subtitle">KNOWLEDGE BUILDER</div>
                     <div class="${prefix}-start-instructions">
                         <p>CLEAR LINES • ANSWER QUESTIONS • BUILD KNOWLEDGE</p>

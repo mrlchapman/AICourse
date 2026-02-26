@@ -2,7 +2,7 @@
  * Quiz Uno Game Module
  *
  * A card game (UNO-style) with quiz questions.
- * Themed as "Carte Royale" - an art deco casino aesthetic.
+ * Themed as "Uno" - an art deco casino aesthetic.
  *
  * Structure:
  * - engine.ts: Pure game logic
@@ -22,7 +22,7 @@ export type { QuizUnoConfig, QuizUnoQuestion } from './engine';
 
 /**
  * Main render function for Quiz Uno
- * Uses the default Card Game (Carte Royale) theme
+ * Uses the default Card Game (Uno) theme
  */
 export function renderQuizUno(activity: Extract<Activity, { type: 'gamification' }>): string {
   return renderQuizUnoWithTheme(activity as GamificationActivity, cardGameTheme);

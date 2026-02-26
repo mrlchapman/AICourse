@@ -11,19 +11,26 @@
  */
 
 import { Activity } from '../../types';
-import { GamificationActivity } from '../core/types';
+import { GamificationActivity, GameTheme } from '../core/types';
 import { renderMemoryMatchWithTheme } from './renderer';
-import { psiLabTheme } from './styles';
+import { psiLabTheme, modernTheme } from './styles';
 
 // Re-export for theme customization
-export { psiLabTheme } from './styles';
+export { psiLabTheme, modernTheme } from './styles';
 export { renderMemoryMatchWithTheme } from './renderer';
 export type { MemoryMatchConfig, MemoryMatchPair, MemoryMatchItem, GameCard } from './engine';
 
+const MEMORY_MATCH_THEMES: Record<string, GameTheme> = {
+  'psi-lab': psiLabTheme,
+  'modern': modernTheme,
+};
+
 /**
  * Main render function for Memory Match
- * Uses the default PSI Lab theme
+ * Uses the configured theme or defaults to Modern
  */
 export function renderMemoryMatch(activity: Extract<Activity, { type: 'gamification' }>): string {
-  return renderMemoryMatchWithTheme(activity as GamificationActivity, psiLabTheme);
+  const themeId = (activity as GamificationActivity).config?.themeId || 'modern';
+  const theme = MEMORY_MATCH_THEMES[themeId] || modernTheme;
+  return renderMemoryMatchWithTheme(activity as GamificationActivity, theme);
 }

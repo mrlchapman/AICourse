@@ -8,7 +8,7 @@ import { fontImports } from '../../core/styles/base';
 
 export const newspaperTheme: GameTheme = {
   id: 'newspaper',
-  name: 'The Lexicon',
+  name: 'Wordsearch',
   classPrefix: 'lexicon',
   css: `
     ${fontImports.playfairDisplay}

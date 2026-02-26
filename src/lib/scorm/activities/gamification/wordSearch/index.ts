@@ -2,7 +2,7 @@
  * Word Search Game Module
  *
  * A word search puzzle game where players find hidden words and answer
- * related questions. Themed as "The Lexicon" - a natural history collection.
+ * related questions. Themed as "Wordsearch" - a natural history collection.
  *
  * Structure:
  * - engine.ts: Pure game logic

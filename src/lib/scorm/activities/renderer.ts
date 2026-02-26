@@ -21,6 +21,7 @@ import { renderModelViewer } from './modelViewer';
 import { renderBranchingScenario } from './branchingScenario';
 import { renderScreenRecording } from './screenRecording';
 import { renderFillInBlank } from './fillInBlank';
+import { renderDocumentViewer } from './documentViewer';
 import { escapeHtml } from './utils';
 
 /**
@@ -90,9 +91,7 @@ export function renderActivity(activity: Activity): string {
       return renderSequence(activity);
 
     case 'document_viewer':
-      return `<div class="activity activity-placeholder">
-        <p><em>Activity type "${activity.type}" coming soon...</em></p>
-      </div>`;
+      return renderDocumentViewer(activity);
 
     case 'pdf':
       return renderPDF(activity);
@@ -490,23 +489,109 @@ function renderInfographic(activity: Extract<Activity, { type: 'infographic' }>)
 }
 
 function renderVideo(activity: Extract<Activity, { type: 'video' }>): string {
-  return `<div class="activity video-activity" id="activity-${activity.id}">
-    <video controls style="max-width: 100%; border-radius: 8px;">
+  const hasDirectUrl = !!activity.src;
+  const title = activity.title || '';
+  const isRequired = activity.required === true;
+  const trackingClass = isRequired ? 'interactive-card' : '';
+  const safeId = activity.id.replace(/[^a-zA-Z0-9]/g, '_');
+
+  if (!hasDirectUrl) {
+    return `<div class="activity video-activity" id="activity-${activity.id}">
+      <div style="padding: 40px; text-align: center; color: #6b7280; background: var(--surface, #f3f4f6); border-radius: 16px;">
+        <p>🎥 No video configured.</p>
+      </div>
+    </div>`;
+  }
+
+  const videoContent = `<video controls class="video-player">
       <source src="${escapeHtml(activity.src)}" type="video/mp4">
       Your browser does not support the video tag.
-    </video>
+    </video>`;
+
+  const viewedButton = isRequired ? `
+    <div class="video-viewed-container">
+      <button class="mark-viewed-btn video-mark-watched" id="mark-watched-${activity.id}" onclick="markVideoWatched_${safeId}()">
+        <span class="btn-icon">🎥</span> Mark as Watched
+      </button>
+    </div>
+  ` : '';
+
+  const trackingScript = isRequired ? `
+  <script>
+    window.markVideoWatched_${safeId} = function() {
+      var btn = document.getElementById('mark-watched-${activity.id}');
+      var activityEl = document.getElementById('activity-${activity.id}');
+      if (!btn || !activityEl) return;
+      btn.classList.add('viewed');
+      btn.innerHTML = '<span class="btn-icon">✓</span> Watched';
+      btn.disabled = true;
+      if (window.completedInteractions) { window.completedInteractions.add(activityEl); }
+      if (window.updateActivityProgress) { window.updateActivityProgress(); }
+    };
+  </script>` : '';
+
+  return `<div class="activity video-activity ${trackingClass}" id="activity-${activity.id}" data-activity-type="video">
+    ${title ? `<h3 class="video-title">${escapeHtml(title)}</h3>` : ''}
+    ${videoContent}
     ${activity.caption ? `<p class="video-caption">${escapeHtml(activity.caption)}</p>` : ''}
+    ${viewedButton}
   </div>
   <style>
     .video-activity {
       margin: 24px 0;
+      background: var(--surface);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+    }
+    .video-title {
+      margin: 0;
+      padding: 20px 24px 0;
+      color: var(--text);
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .video-player {
+      max-width: 100%;
+      width: 100%;
+      border-radius: 0;
+      display: block;
     }
     .video-caption {
-      margin-top: 8px;
+      margin: 0;
+      padding: 12px 24px;
       font-style: italic;
       color: #6b7280;
     }
-  </style>`;
+    .video-viewed-container {
+      padding: 16px 24px;
+      text-align: center;
+    }
+    .video-mark-watched {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #10b981, #14b8a6);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+    .video-mark-watched:hover:not(.viewed) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(16, 185, 129, 0.4);
+    }
+    .video-mark-watched.viewed {
+      background: linear-gradient(135deg, #059669, #0d9488);
+      cursor: default;
+    }
+  </style>
+  ${trackingScript}`;
 }
 
 function renderYouTube(activity: Extract<Activity, { type: 'youtube' }>): string {

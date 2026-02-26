@@ -1,5 +1,5 @@
 /**
- * Synthwave Theme for Synth Defender
+ * Synthwave Theme for Space Invaders
  * A retro synth/analog aesthetic with warm amber tones
  */
 
